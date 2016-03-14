@@ -1,0 +1,12 @@
+.idea
+node_modules
+bower_components
+build
+dist
+
+src/*.js
+src/*.js.map
+src/**/*.js
+src/**/*.js.map
+src/**/**/*.js
+src/**/**/*.js.map

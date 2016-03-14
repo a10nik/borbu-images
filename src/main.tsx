@@ -1,0 +1,22 @@
+import 'bootswatch/paper/bootstrap.css';
+import 'font-awesome/css/font-awesome.css';
+import './main.css';
+
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+import { Router, Route, Redirect, IndexRoute } from 'react-router';
+
+import * as InitAppService from './main.app.service';
+
+import MainComponent from './main.component';
+import TodoContainer from './todo/ui/todo.container';
+
+InitAppService.init().then(renderRouter);
+
+function renderRouter() {
+    ReactDOM.render((
+        <Router>
+            <Route path="/" component={MainComponent}/>
+        </Router>
+    ), document.getElementById('content'));
+}
