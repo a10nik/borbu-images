@@ -3,24 +3,30 @@ import { Link } from 'react-router';
 import { Paper } from 'material-ui';
 
 import AuthComponent from './auth/ui/auth.component.tsx';
-import TodoCounter from './todo/ui/todo.counter.tsx';
 import LoadingComponent from './common/loading/loading.component.tsx';
 import ImageWindowComponent from './image-window/image-window.component';
 import {Toggle} from "material-ui";
 import {Toolbar} from "material-ui";
-import {ToolbarGroup} from "material-ui";
+import {ToolbarGroup, DropDownMenu, MenuItem, ToolbarTitle, FlatButton} from "material-ui";
 
 export default class MainComponent extends React.Component<{ children: any }, { splitVertically: boolean }> {
 
     constructor(props) {
+        super(props);
+
         this.state = {
             splitVertically: true
         };
-        super(props);
     }
 
-    private toggleSplit() {
-        this.setState({ splitVertically: !this.state.splitVertically })
+    private getPanelStyle(i: number) {
+        return {
+            display: "inline-block",
+            marginTop: 20,
+            width: this.state.splitVertically ? "48%" : "100%",
+            marginRight: this.state.splitVertically && i === 0 ? "4%" : 0,
+            verticalAlign: "top"
+        };
     }
 
     render() {
@@ -37,27 +43,17 @@ export default class MainComponent extends React.Component<{ children: any }, { 
                 <div className="container">
                     <LoadingComponent />
                     <Toolbar>
-                        <ToolbarGroup float="left">
-                            <div style={{ width: 250 }}>
-                                <Toggle toggled={this.state.splitVertically} label="Split vertically" onToggle={()=>this.toggleSplit()}/>
-                            </div>
+                        <ToolbarGroup firstChild={true} float="left">
+                            <DropDownMenu value={this.state.splitVertically} onChange={(e, i, val) => this.setState({ splitVertically: val })}>
+                                <MenuItem value={true} primaryText="Split vertically" />
+                                <MenuItem value={false} primaryText="Split horizontally" />
+                            </DropDownMenu>
                         </ToolbarGroup>
                     </Toolbar>
-                    <Paper style={{
-                        display: "inline-block",
-                        marginTop: 20,
-                        width: this.state.splitVertically ? "48%" : "100%",
-                        marginRight: this.state.splitVertically ? "4%" : 0,
-                        verticalAlign: "top"
-                    }}>
+                    <Paper style={this.getPanelStyle(0)}>
                         <ImageWindowComponent/>
                     </Paper>
-                    <Paper style={{
-                        marginTop: 20,
-                        verticalAlign: "top",
-                        display: "inline-block",
-                        width: this.state.splitVertically ? "48%" : "100%"
-                    }}>
+                    <Paper style={this.getPanelStyle(1)}>
                         <ImageWindowComponent/>
                     </Paper>
                 </div>
@@ -67,7 +63,7 @@ export default class MainComponent extends React.Component<{ children: any }, { 
                             <div className="row">
                                 <div className="col-md-3 col-sm-6">
                                     <i className="fa fa-github fa-lg"></i>
-                                    <a href="https://github.com/a10nik">Github</a>
+                                    <a href="https://github.com/a10nik/borbu-images">Github</a>
                                 </div>
                             </div>
                             <hr />

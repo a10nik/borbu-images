@@ -5,11 +5,11 @@ import './main.css';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Router, Route, Redirect, IndexRoute } from 'react-router';
+require("react-tap-event-plugin")();
 
 import * as InitAppService from './main.app.service';
 
 import MainComponent from './main.component';
-import TodoContainer from './todo/ui/todo.container';
 
 InitAppService.init().then(renderRouter);
 

@@ -83,7 +83,7 @@ export default class ImageWindowComponent extends React.Component<ImageWindowPro
         return(
             <Paper>
                 <Toolbar>
-                    <ToolbarGroup float="left">
+                    <ToolbarGroup float="left" firstChild={true}>
                         <Dropzone style={{display: "inline-block"}} onDropAccepted={this.onDrop.bind(this)} accept="image/*">
                             <FlatButton label="Drop image here"/>
                         </Dropzone>
