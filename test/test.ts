@@ -1,0 +1,1 @@
+require("../src/image-utils/image-utils.spec.ts");
