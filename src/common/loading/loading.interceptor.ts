@@ -1,4 +1,3 @@
-import * as Promise from 'bluebird';
 import * as axios from 'axios';
 
 import observableFactory from '../observable-factory';

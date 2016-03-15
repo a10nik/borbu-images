@@ -1,0 +1,57 @@
+{
+  "version": "v4",
+  "repo": "borisyankov/DefinitelyTyped",
+  "ref": "master",
+  "path": "typings",
+  "bundle": "typings/tsd.d.ts",
+  "installed": {
+    "auth0/auth0.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "auth0.lock/auth0.lock.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "axios/axios.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "classnames/classnames.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "es6-promise/es6-promise.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "history/history.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "react-router/history.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "lodash/lodash.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "react/react.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "material-ui/material-ui.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "react-bootstrap/react-bootstrap.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "node/node.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "uuid/UUID.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "react-router/react-router.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "react/react-dom.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    },
+    "react-dropzone/react-dropzone.d.ts": {
+      "commit": "ca92a5b250433c38230b5f4138b36453862342bf"
+    }
+  }
+}

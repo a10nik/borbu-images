@@ -5,6 +5,8 @@ import { Button, NavDropdown, MenuItem } from 'react-bootstrap';
 import * as AuthModel from './../auth.model.ts';
 import * as AuthAppService from '../auth.app.service.ts';
 
+var classes = require("./auth.component.css");
+
 export default class AuthComponent extends React.Component<{}, AuthState> {
 
     constructor(props) {
@@ -53,7 +55,7 @@ export default class AuthComponent extends React.Component<{}, AuthState> {
                         <a>Welcome guest!</a>
                     </li>
                     <li>
-                        <Button bsStyle="primary" style={{marginTop:14}} onClick={this.login.bind(this)}>Sign in</Button>
+                        <Button bsStyle="primary" className={classes.signInButton} onClick={this.login.bind(this)}>Sign in</Button>
                     </li>
                 </ul>
             }

@@ -1,7 +1,5 @@
 import * as axios from 'axios';
 import * as Auth0Lock from 'auth0-lock';
-import * as Promise from 'bluebird';
-
 import * as model from './auth.model';
 import * as interceptor from './auth.interceptor';
 
