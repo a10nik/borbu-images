@@ -97,11 +97,11 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
             <Paper>
                 <Toolbar className={classes.editorToolbar}>
                     <ToolbarGroup float="left" firstChild={true}>
-                        <FlatButton label="Drop image here">
-                            <Dropzone className={classes.invisibleDropzone} style={{}}
+                        <Dropzone className={classes.buttonDropzone} style={{}}
                                   onDropAccepted={this.onDrop.bind(this)}
-                                  accept="image/*"/>
-                        </FlatButton>
+                                  accept="image/*">
+                            <FlatButton style={{float: "left", margin: "10px 24px"}} label="Drop image here"/>
+                        </Dropzone>
                         <IconMenu
                             iconButtonElement={<IconButton><FileFileDownload/></IconButton>}
                             onChange={(ev, val) => this.downloadImage(val)}
