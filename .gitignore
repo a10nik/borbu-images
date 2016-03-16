@@ -3,6 +3,7 @@ node_modules
 bower_components
 build
 dist
+test-build
 typings
 
 src/*.js
