@@ -2,5 +2,10 @@ language: node_js
 node_js:
   - "4.1"
 script:
-  - npm run ci
+  - npm test
+  - npm run build
   - bash ./.travis-deploy.sh
+env:
+  global:
+  - GH_REF: github.com/a10nik/borbu-images.git
+  - secure: "b9linyvCCoovk3P9jjzBAdwXtQ2dl1CiPxhQfKTFwNOet3qMpGwu4mNnrhCAfHd6JPohfUV7jhhtTWSeRN3XRe8+RU5sfJ89AFtsrFib4SDqnkxnPwJctUf2HSXTunexvwWKEKcV+4Hj+i+e3q0o53GfKnCu9uwTbSy3pUlOnocPR/SJKlZJKGk7dBeyW/oaMB/RNvz5gbaLPAHg5XifXFvceg4s99J2NA97ese1Jur6Dph29oteudDmx3AlWDWXzTPxB1i9fZF9w1xG3gN+8S3D7VHkOJwlCL0inTvo6Ik3pk86+uPbfwJObvI3KQ+gHgAt653HUALmoYKgzicGQ6ibJtvP1AC8cvH6ua+bKzO8rHIB/yvT+bsdcCMIv1LT6MdCP6x4q9Go4mkMDelhkOaVy7oLlrzT8NO2G7KAoFZNQi74AuhLoYm+Jb6oH+E4JGLfGafSl7cPLHDmTIF1t0UsqokeLlWJa1Ht1PMz9sq+rnUT63/tdLkUUzlAt2P9q8Y62SaFjukBOEsxtwL3U3U17K3XV2yEv0IgMTqm/FNyMcmVUyCBS796sR82OTDXWQavo2cRGXU2S3Qrg9mbMm084aRSyGhH2Q8Fc1w6FFS9lqEaRrLWY0hJTU/jBZLyD9uGI1ORrCRx85deYJDXnButcF3NSNjzSGCwZfq+iNk="

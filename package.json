@@ -5,11 +5,11 @@
   "main": "src/main.js",
   "scripts": {
     "dev": "webpack-dev-server --inline --hot --TARGET=DEV",
-    "start": "webpack && node server.js",
-    "dist": "webpack --TARGET=DIST && node server.js --TARGET=DIST",
-    "ci": "webpack --TARGET=TEST && mocha-phantomjs test-build/index.html && webpack",
+    "build": "webpack",
+    "start": "webpack --TARGET=DIST && node server.js --TARGET=DIST",
+    "test": "webpack --TARGET=TEST && mocha-phantomjs test-build/index.html",
     "lint": "tslint src/**/*.ts",
-    "test": "webpack-dev-server --inline --hot --TARGET=TEST",
+    "t": "webpack-dev-server --inline --hot --TARGET=TEST",
     "postinstall": "typings install"
   },
   "dependencies": {
