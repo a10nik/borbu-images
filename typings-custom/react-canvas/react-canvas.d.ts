@@ -1,5 +1,3 @@
-///<reference path='../../typings/react/react.d.ts' />
-
 declare module "react-canvas" {
     import React = __React;
 

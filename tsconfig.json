@@ -6,5 +6,9 @@
     "jsx": "react",
     "noImplicitUseStrict": true
   },
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "typings/main.d.ts",
+    "typings/main"
+  ]
 }

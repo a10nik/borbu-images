@@ -10,7 +10,7 @@
     "ci": "npm run test && webpack",
     "lint": "tslint src/**/*.ts",
     "test": "webpack-dev-server --inline --hot --TARGET=DEV --config=webpack.mocha.config.js",
-    "postinstall": "tsd install"
+    "postinstall": "typings install"
   },
   "dependencies": {
     "axios": "0.7.0",
@@ -34,7 +34,7 @@
     "react-router": "1.0.3",
     "react-tap-event-plugin": "^0.2.0",
     "serve-static": "^1.10.2",
-    "tsd": "^0.6.5",
+    "typings": "^0.7.9",
     "uuid": "2.0.1"
   },
   "devDependencies": {

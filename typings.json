@@ -1,0 +1,26 @@
+{
+  "name": "borbu-images",
+  "version": false,
+  "ambientDependencies": {
+    "auth0": "github:DefinitelyTyped/DefinitelyTyped/auth0/auth0.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "auth0.lock": "github:DefinitelyTyped/DefinitelyTyped/auth0.lock/auth0.lock.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "axios": "github:DefinitelyTyped/DefinitelyTyped/axios/axios.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "classnames": "github:DefinitelyTyped/DefinitelyTyped/classnames/classnames.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "es6-promise": "github:DefinitelyTyped/DefinitelyTyped/es6-promise/es6-promise.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "history": "github:DefinitelyTyped/DefinitelyTyped/react-router/history.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "lodash": "github:DefinitelyTyped/DefinitelyTyped/lodash/lodash.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "react": "github:DefinitelyTyped/DefinitelyTyped/react/react.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "material-ui": "github:DefinitelyTyped/DefinitelyTyped/material-ui/material-ui.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "react-bootstrap": "github:DefinitelyTyped/DefinitelyTyped/react-bootstrap/react-bootstrap.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "node": "github:DefinitelyTyped/DefinitelyTyped/node/node.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "UUID": "github:DefinitelyTyped/DefinitelyTyped/uuid/UUID.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "react-router": "github:DefinitelyTyped/DefinitelyTyped/react-router/react-router.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "react-dom": "github:DefinitelyTyped/DefinitelyTyped/react/react-dom.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "react-dropzone": "github:DefinitelyTyped/DefinitelyTyped/react-dropzone/react-dropzone.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "mocha": "github:DefinitelyTyped/DefinitelyTyped/mocha/mocha.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "assertion-error": "github:DefinitelyTyped/DefinitelyTyped/assertion-error/assertion-error.d.ts#2f47c75835b837777a85287611703d683b0aaa83",
+    "chai": "github:DefinitelyTyped/DefinitelyTyped/chai/chai.d.ts#2f47c75835b837777a85287611703d683b0aaa83",
+    "chai-as-promised": "github:DefinitelyTyped/DefinitelyTyped/chai-as-promised/chai-as-promised.d.ts#2f47c75835b837777a85287611703d683b0aaa83",
+    "promises-a-plus": "github:DefinitelyTyped/DefinitelyTyped/promises-a-plus/promises-a-plus.d.ts#2f47c75835b837777a85287611703d683b0aaa83"
+  }
+}
