@@ -1,3 +1,5 @@
+require("es6-shim");
+
 import 'bootswatch/paper/bootstrap.css';
 import 'font-awesome/css/font-awesome.css';
 import './main.css';
@@ -10,6 +12,7 @@ require("react-tap-event-plugin")();
 import * as InitAppService from './main.app.service';
 
 import MainComponent from './main.component';
+
 
 InitAppService.init().then(renderRouter);
 

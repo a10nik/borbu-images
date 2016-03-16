@@ -7,7 +7,7 @@
     "dev": "webpack-dev-server --inline --hot --TARGET=DEV",
     "start": "webpack && node server.js",
     "dist": "webpack --TARGET=DIST && node server.js --TARGET=DIST",
-    "ci": "npm run test && webpack",
+    "ci": "webpack --config webpack.mocha.config.js && mocha-phantomjs build/index.html && webpack",
     "lint": "tslint src/**/*.ts",
     "test": "webpack-dev-server --inline --hot --TARGET=DEV --config=webpack.mocha.config.js",
     "postinstall": "typings install"
@@ -17,6 +17,7 @@
     "bluebird": "2.10.2",
     "bootswatch": "3.3.5",
     "classnames": "2.2.0",
+    "es6-shim": "^0.35.0",
     "fbjs": "0.2.1",
     "font-awesome": "4.4.0",
     "history": "1.17",
