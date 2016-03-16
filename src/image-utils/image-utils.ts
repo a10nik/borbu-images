@@ -1,4 +1,4 @@
-function imgToCanvas(img: HTMLImageElement): HTMLCanvasElement {
+export function imgToCanvas(img: HTMLImageElement): HTMLCanvasElement {
     var canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;

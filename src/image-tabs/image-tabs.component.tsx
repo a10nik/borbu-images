@@ -6,7 +6,11 @@ import lodash = require("lodash");
 import {Paper, FlatButton, Toolbar, DropDownMenu, ToolbarGroup, MenuItem} from "material-ui";
 import ImageEditor from "../image-editor/image-editor.component";
 import ErrorSnackbar from "../common/error-snackbar.component";
-import {IError, ImageLoadError} from "../common/errors";
+import {IError} from "../common/errors";
+import {RaisedButton} from "material-ui";
+import {Dialog} from "material-ui";
+import {getPsnr} from "../image-utils/image-utils";
+import {Popover} from "material-ui";
 var styles = require("./image-tabs.component.css");
 
 interface ImageTabsProps {
@@ -15,12 +19,27 @@ interface ImageTabsProps {
 interface ImageTabsState {
     splitVertically: boolean,
     tabs: TabState[],
-    error?: IError
+    error?: IError,
+    psnrResult?: number,
+    psnrButton?:React.ReactInstance
 }
 
 interface TabState {
     img: HTMLImageElement
 }
+
+class PsnrNeedsBothImagesError implements IError {
+    getText():string {
+        return "Both images are needed to calculate PSNR";
+    }
+}
+
+class PsnrDifferentSizesError implements IError {
+    getText():string {
+        return "Both images have to be of the same dimensions";
+    }
+}
+
 
 export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabsState> {
 
@@ -30,7 +49,8 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
         this.state = {
             tabs: [null, null],
             splitVertically: true,
-            error: null
+            error: null,
+            psnrResult: null
         };
     }
 
@@ -50,8 +70,8 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
         this.setState(lodash.merge(this.state, {tabs: newTabs}) as ImageTabsState)
     }
 
-    onImgLoadError() {
-        this.setState(lodash.merge(this.state, {error: new ImageLoadError()}) as ImageTabsState)
+    onError(e: IError) {
+        this.setState(lodash.merge(this.state, {error: e}) as ImageTabsState)
     }
 
     clearError() {
@@ -60,6 +80,24 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
 
     setSplitVertically(val:boolean) {
         this.setState(lodash.merge(this.state, {splitVertically: val}) as ImageTabsState)
+    }
+
+    showPsnr(ev) {
+        if (!this.state.tabs[0] || !this.state.tabs[1])
+            return this.onError(new PsnrNeedsBothImagesError());
+        var img1 = this.state.tabs[0].img;
+        var img2 = this.state.tabs[1].img;
+        if (img1.width !== img2.width || img1.height !== img2.height)
+            return this.onError(new PsnrDifferentSizesError());
+        var psnr = getPsnr(img1, img2);
+        this.setState(lodash.merge(this.state, {
+            psnrResult: psnr,
+            psnrButton: ev.currentTarget as React.ReactInstance
+        }) as ImageTabsState)
+    }
+
+    closePsnr() {
+        this.setState(lodash.merge(this.state, {psnrResult: null}) as ImageTabsState)
     }
 
     render() {
@@ -71,17 +109,29 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
                             <MenuItem value={true} primaryText="Split vertically" />
                             <MenuItem value={false} primaryText="Split horizontally" />
                         </DropDownMenu>
+                        <RaisedButton label="Calculate PSNR" onTouchTap={(ev) => this.showPsnr(ev)}/>
+                        <Popover
+                            open={this.state.psnrResult !== null}
+                            anchorEl={this.state.psnrButton}
+                            anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
+                            targetOrigin={{horizontal: 'left', vertical: 'top'}}
+                            onRequestClose={() => this.closePsnr()}
+                        >
+                            <div style={{padding: 20}}>
+                                PNSR: <b>{this.state.psnrResult && this.state.psnrResult.toFixed(2)} dB</b>
+                            </div>
+                        </Popover>
                     </ToolbarGroup>
                 </Toolbar>
                 <Paper style={this.getPanelStyle(0)}>
                     <ImageEditor img={this.state.tabs[0] ? this.state.tabs[0].img : null}
                                  onImgLoad={img => this.setImg(0, img)}
-                                 onImgLoadError={() => this.onImgLoadError()}/>
+                                 onError={(e) => this.onError(e)}/>
                 </Paper>
                 <Paper style={this.getPanelStyle(1)}>
                     <ImageEditor img={this.state.tabs[1] ? this.state.tabs[1].img : null}
                                  onImgLoad={img => this.setImg(1, img)}
-                                 onImgLoadError={() => this.onImgLoadError()}/>
+                                 onError={(e) => this.onError(e)}/>
                 </Paper>
                 <ErrorSnackbar error={this.state.error} clearError={() => this.clearError()}/>
             </div>
