@@ -39,8 +39,7 @@ var DEFAULT_PARAMS = {
         new HtmlWebpackPlugin({
             template: './src/index.html',
             inject: 'body'
-        }),
-        new webpack.optimize.DedupePlugin()
+        })
     ].concat(_bootswatchWorkaround()),
     devServer: {
         contentBase: 'dev/',
@@ -56,7 +55,8 @@ var PARAMS_PER_TARGET = {
     DEV: {
         devtool: 'inline-source-map',
         output: {
-            filename: '[name].js'
+            filename: '[name].js',
+            sourceMapFilename: '[name].map'
         },
         plugins: [
             new OpenBrowserWebpackPlugin({ url: 'http://localhost:8081/' })
@@ -67,7 +67,8 @@ var PARAMS_PER_TARGET = {
         devtool: 'inline-source-map',
         output: {
             path: './test-build',
-            filename: '[name].js'
+            filename: '[name].js',
+            sourceMapFilename: '[name].map'
         },
         entry: {
             main: 'mocha!./test/test.ts'
@@ -88,7 +89,8 @@ var PARAMS_PER_TARGET = {
         },
         devtool: 'source-map',
         plugins: [
-            new CleanWebpackPlugin(['build'])
+            new CleanWebpackPlugin(['build']),
+            new webpack.optimize.DedupePlugin()
         ]
     },
 
@@ -99,6 +101,7 @@ var PARAMS_PER_TARGET = {
         },
         plugins: [
             new CleanWebpackPlugin(['dist']),
+            new webpack.optimize.DedupePlugin(),
             new webpack.optimize.UglifyJsPlugin()
         ]
     }
