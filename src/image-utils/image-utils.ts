@@ -46,3 +46,46 @@ export function getPsnr(img1: HTMLImageElement, img2: HTMLImageElement): number 
     var mseSum = getMseSum(data1, data2);
     return 10 * (log10(sqr(255) * pixelCount * 3) - log10(mseSum));
 }
+
+interface Pixel {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+}
+
+function mapPixels(fn: (Pixel) => Pixel, img: CanvasImage): CanvasImage {
+    let {width, height} = img.canvas;
+    let data = img.canvas.getContext("2d")
+        .getImageData(0, 0, width, height).data;
+    let length = data.length;
+    for (var i = 0; i < length; i += 4) {
+        let {r, g, b, a} = fn({ r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3]});
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+        data[i + 3] = a;
+   }
+   var newCanvas = document.createElement("canvas");
+   newCanvas.width = width;
+   newCanvas.height = height;
+   newCanvas.getContext("2d").putImageData(new ImageData(data, width, height), 0, 0);
+   return new CanvasImage(newCanvas, img.name);
+}
+
+export class CanvasImage {
+    public canvas: HTMLCanvasElement;
+    public name: string;
+    private src: string;
+    
+    public constructor(canvas: HTMLCanvasElement, name: string) {
+        this.canvas = canvas;
+        this.name = name;
+    } 
+    
+    public getSrc() {
+        if (!this.src)
+            this.src = this.canvas.toDataURL(); 
+        return this.src;
+    }
+}

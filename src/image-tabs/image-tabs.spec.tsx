@@ -69,5 +69,5 @@ describe("image-tabs", () => {
                 done();
             }, 0);
         });
-    })
+    });
 });
