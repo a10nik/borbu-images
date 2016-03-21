@@ -27,7 +27,7 @@ var DEFAULT_PARAMS = {
     module: {
         loaders: [
             {test: /\.tsx?$/, loader: 'react-hot!ts-loader?jsx=true', exclude: /(\.test.ts$|node_modules)/},
-            {test: /\.css$/, loader: 'style-loader!css-loader'},
+            {test: /\.css$/, loader: 'css?localIdentName=[name]__[local]___[hash:base64:5]'},
             {test: /\.tpl.html/, loader: 'html'},
             {test: /\.(ico|png|jpg|gif|svg|eot|ttf|woff|woff2)(\?.+)?$/, loader: 'url-loader?limit=100000'}
         ],
@@ -53,7 +53,7 @@ var DEFAULT_PARAMS = {
 var PARAMS_PER_TARGET = {
 
     DEV: {
-        devtool: 'inline-source-map',
+        devtool: 'inline-eval-cheap-source-map',
         output: {
             filename: '[name].js',
             sourceMapFilename: '[name].map'
@@ -64,7 +64,7 @@ var PARAMS_PER_TARGET = {
     },
 
     TEST: {
-        devtool: 'inline-source-map',
+        devtool: 'inline-eval-cheap-source-map',
         output: {
             path: './test-build',
             filename: '[name].js',

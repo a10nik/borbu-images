@@ -39,6 +39,7 @@
     "uuid": "2.0.1"
   },
   "devDependencies": {
+    "blob-polyfill": "^1.0.20150320",
     "brfs": "^1.4.3",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.2.0",

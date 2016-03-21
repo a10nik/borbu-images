@@ -1,3 +1,12 @@
+export function getImage(src: string): Promise<HTMLImageElement> {
+    var image = new Image();
+    return new Promise((resolve, reject) => {
+        image.src = src;
+        image.onload = () => resolve(image);
+        image.onerror = () => reject();
+    });
+}
+
 export function imgToCanvas(img: HTMLImageElement): HTMLCanvasElement {
     var canvas = document.createElement('canvas');
     canvas.width = img.width;

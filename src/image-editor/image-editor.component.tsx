@@ -29,6 +29,7 @@ interface ImageWindowProps {
 }
 
 interface ImageWindowState {
+    promise?: Promise<void>
 }
 
 enum DownloadFormat {
@@ -52,9 +53,10 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
     }
 
     private onDrop(files:File[]) {
-        this.getImg(files)
+        let promise = this.getImg(files)
             .then(img => this.props.onImgLoad(img))
             .catch(() => this.props.onError(new ImageLoadError()));
+        this.setState({ promise: promise });
     }
 
     private getImgStyle() {
