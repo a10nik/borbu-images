@@ -32,7 +32,7 @@ var DEFAULT_PARAMS = {
             {test: /\.(ico|png|jpg|gif|svg|eot|ttf|woff|woff2)(\?.+)?$/, loader: 'url-loader?limit=100000'}
         ],
         postLoaders: [
-            { loader: "transform?brfs" }
+            { loader: "transform/cacheable?brfs" }
         ]
     },
     plugins: [
