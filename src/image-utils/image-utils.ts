@@ -76,6 +76,21 @@ function mapPixels(fn: (Pixel) => Pixel, canvas: HTMLCanvasElement): HTMLCanvasE
    return newCanvas;
 }
 
+function toGreyscale(fn: (Pixel) => number, canvas: HTMLCanvasElement) {
+    return mapPixels(px => {
+        let greyVal = fn(px);
+        return { r: greyVal, g: greyVal, b: greyVal, a: px.a};
+    }, canvas);
+}
+
+export function toUniformGreyscale(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    return toGreyscale(({r, g, b}) => (r + g + b) / 3, canvas);
+}
+
+export function toCcir6011Greyscale(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    return toGreyscale(({r, g, b}) =>  0.299 * r + 0.587 * g + 0.114 * b, canvas);
+}
+
 export class CanvasImage {
     public canvas: HTMLCanvasElement;
     public name: string;
@@ -86,9 +101,13 @@ export class CanvasImage {
         this.name = name;
     } 
     
-    public getSrc() {
+    public getSrc(): string {
         if (!this.src)
             this.src = this.canvas.toDataURL(); 
         return this.src;
+    }
+    
+    public withCanvas(canvas): CanvasImage {
+        return new CanvasImage(canvas, this.name);
     }
 }

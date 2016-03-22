@@ -5,7 +5,7 @@ import Dropzone = require('react-dropzone');
 import { CircularProgress } from 'material-ui';
 import lodash = require("lodash");
 import {Paper, FlatButton, FontIcon, Toggle, Toolbar, ToolbarGroup} from "material-ui";
-import {FileFileDownload} from "material-ui/lib/svg-icons";
+import {FileFileDownload, ImageColorLens} from "material-ui/lib/svg-icons";
 import {IconMenu, MenuItem, IconButton} from "material-ui";
 import * as ImageUtils from "../image-utils/image-utils";
 import {IError} from "../common/errors";
@@ -17,10 +17,9 @@ class ImageLoadError implements IError {
     getText():string { return "Cannot load image"; }
 }
 
-class EmptyImageDownloadError implements IError {
-    getText():string { return "You dragged no images to download"; }
+class NoImageError implements IError {
+    getText():string { return "You need to drag an image here first"; }
 }
-
 
 interface ImageWindowProps {
     img?: ImageUtils.CanvasImage,
@@ -34,6 +33,10 @@ interface ImageWindowState {
 
 enum DownloadFormat {
     Png
+}
+
+enum Greyscale {
+    Uniform, Ccir6011
 }
 
 export default class ImageEditor extends React.Component<ImageWindowProps, ImageWindowState> {
@@ -60,9 +63,23 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
         };
     }
 
+    private toGreyscale(type: Greyscale) {
+        if (!this.props.img)
+            return this.props.onError(new NoImageError());
+        switch (type) {
+            case Greyscale.Uniform:
+                return this.props.onImgLoad(
+                    this.props.img.withCanvas(ImageUtils.toUniformGreyscale(this.props.img.canvas)));
+            case Greyscale.Ccir6011:
+                return this.props.onImgLoad(
+                    this.props.img.withCanvas(ImageUtils.toCcir6011Greyscale(this.props.img.canvas)));
+        }
+        
+    }
+    
     downloadImage(format: DownloadFormat) {
         if (!this.props.img)
-            this.props.onError(new EmptyImageDownloadError());
+            this.props.onError(new NoImageError());
         switch (format) {
             case DownloadFormat.Png:
                 let pngUrl = this.props.img.canvas.toDataURL("image/png");
@@ -95,11 +112,14 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                                   accept="image/*">
                             <FlatButton style={{float: "left", margin: "10px 24px"}} label="Drop image here"/>
                         </Dropzone>
-                        <IconMenu
-                            iconButtonElement={<IconButton><FileFileDownload/></IconButton>}
-                            onChange={(ev, val) => this.downloadImage(val)}
-                        >
+                        <IconMenu iconButtonElement={<IconButton><FileFileDownload/></IconButton>}
+                            onChange={(ev, val) => this.downloadImage(val)}>
                             <MenuItem value={DownloadFormat.Png} primaryText="As PNG" />
+                        </IconMenu>
+                        <IconMenu iconButtonElement={<IconButton><ImageColorLens/></IconButton>}
+                            onChange={(ev, val) => this.toGreyscale(val)}>
+                            <MenuItem value={Greyscale.Uniform} primaryText="Uniform greyscale" />
+                            <MenuItem value={Greyscale.Ccir6011} primaryText="CCIR 601-1 greyscale" />
                         </IconMenu>
                     </ToolbarGroup>
                 </Toolbar>
