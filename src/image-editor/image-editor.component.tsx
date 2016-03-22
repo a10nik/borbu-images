@@ -23,8 +23,8 @@ class EmptyImageDownloadError implements IError {
 
 
 interface ImageWindowProps {
-    img?: HTMLImageElement,
-    onImgLoad: (img: HTMLImageElement) => void,
+    img?: ImageUtils.CanvasImage,
+    onImgLoad: (img: ImageUtils.CanvasImage) => void,
     onError: (e: IError) => void,
 }
 
@@ -38,43 +38,34 @@ enum DownloadFormat {
 
 export default class ImageEditor extends React.Component<ImageWindowProps, ImageWindowState> {
 
-    private getImg(files:File[]):Promise<HTMLImageElement> {
-        return new Promise<HTMLImageElement>((accept, reject) => {
-            var img = new Image();
-            img.onload = function () {
-                accept(img);
-            };
-            img.onerror = function (err) {
-                reject(err);
-            };
-            img.src = URL.createObjectURL(files[0]);
-            img.name = files[0].name;
-        });
+    private getImg(file:File): Promise<ImageUtils.CanvasImage> {
+        return ImageUtils.getCanvas(URL.createObjectURL(file))
+            .then(canvas => new ImageUtils.CanvasImage(canvas, file.name));
     }
 
     private onDrop(files:File[]) {
-        let promise = this.getImg(files)
+        let promise = this.getImg(files[0])
             .then(img => this.props.onImgLoad(img))
             .catch(() => this.props.onError(new ImageLoadError()));
         this.setState({ promise: promise });
     }
 
     private getImgStyle() {
+        let img = this.props.img;
         return {
             top: 0,
             left: 0,
-            width: this.props.img.width,
-            height: this.props.img.height
+            width: img ? img.canvas.width : 0,
+            height: img ? img.canvas.height : 0
         };
     }
 
     downloadImage(format: DownloadFormat) {
         if (!this.props.img)
             this.props.onError(new EmptyImageDownloadError());
-        var canvas = ImageUtils.imgToCanvas(this.props.img);
         switch (format) {
             case DownloadFormat.Png:
-                let pngUrl = canvas.toDataURL("image/png");
+                let pngUrl = this.props.img.canvas.toDataURL("image/png");
                 let name = this.props.img.name
                     ? (this.props.img.name.replace(/\.[^/.]+$/, "") + ".png")
                     : "image.png";
@@ -116,8 +107,8 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                 <div className={classes.scrollable}>
                     <Dropzone style={{}} onDropAccepted={this.onDrop.bind(this)} accept="image/*">
                         {this.props.img ?
-                            <CanvasSurface width={this.props.img.width} height={this.props.img.height} top={0} left={0}>
-                                <CanvasImage src={this.props.img.src} style={this.getImgStyle()}/>
+                            <CanvasSurface width={this.props.img.canvas.width} height={this.props.img.canvas.height} top={0} left={0}>
+                                <CanvasImage src={this.props.img.getSrc()} style={this.getImgStyle()}/>
                             </CanvasSurface> :
                             <Paper style={{padding: 30}}>
                                 Here the loaded image will appear

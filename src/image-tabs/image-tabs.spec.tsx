@@ -22,22 +22,8 @@ function fixBinary(bin) {
     return buf;
 }
 
-function getBlob(img: HTMLImageElement): Blob {
-    // Create an empty canvas element
-    var canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    // Copy the image contents to the canvas
-    var ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-
-    // Get the data-URL formatted image
-    // Firefox supports PNG and JPEG. You could check img.src to
-    // guess the original format, but be aware the using "image/jpg"
-    // will re-encode the image.
+function getBlob(canvas: HTMLCanvasElement): Blob {
     var dataURL = canvas.toDataURL("image/png");
-
     var base64 = dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
     var binary = fixBinary(atob(base64));
     var blob = new Blob([binary], {type: 'image/png'});
@@ -47,8 +33,7 @@ function getBlob(img: HTMLImageElement): Blob {
 describe("image-tabs", () => {
     beforeEach(() => {
         this.imageTabs = TestUtils.renderIntoDocument(<ImageTabs/> as React.CElement<any, ImageTabs>);
-        return ImageUtils.getImage(black)
-            .then(img => { this.blackBlob = getBlob(img) });
+        return ImageUtils.getCanvas(black).then(canvas => { this.blackBlob = getBlob(canvas) });
     });
 
     it("should have two editors inside", () => {
@@ -56,7 +41,7 @@ describe("image-tabs", () => {
         expect(imgAreas.length).to.equal(2);
     });
 
-    it("should load image into canvas", (done) => {
+    it("should display top-left pixel of black color when black square is loaded", (done) => {
         let imgArea = TestUtils.scryRenderedComponentsWithType(this.imageTabs, ImageEditor)[0];
         let dropzone = TestUtils.scryRenderedComponentsWithType(imgArea, Dropzone)[0];
         TestUtils.Simulate.drop(ReactDOM.findDOMNode(dropzone),
@@ -69,5 +54,9 @@ describe("image-tabs", () => {
                 done();
             }, 0);
         });
+    });
+    
+    it("should generate black-n-white version", () => {
+        
     });
 });

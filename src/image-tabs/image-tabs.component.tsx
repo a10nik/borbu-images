@@ -9,7 +9,7 @@ import ErrorSnackbar from "../common/error-snackbar.component";
 import {IError} from "../common/errors";
 import {RaisedButton} from "material-ui";
 import {Dialog} from "material-ui";
-import {getPsnr} from "../image-utils/image-utils";
+import * as ImageUtils from "../image-utils/image-utils";
 import {Popover} from "material-ui";
 var styles = require("./image-tabs.component.css");
 
@@ -18,14 +18,10 @@ interface ImageTabsProps {
 
 interface ImageTabsState {
     splitVertically: boolean,
-    tabs: TabState[],
+    tabImages: ImageUtils.CanvasImage[],
     error?: IError,
     psnrResult?: number,
     psnrButton?:React.ReactInstance
-}
-
-interface TabState {
-    img: HTMLImageElement
 }
 
 class PsnrNeedsBothImagesError implements IError {
@@ -47,7 +43,7 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
         super(props);
 
         this.state = {
-            tabs: [null, null],
+            tabImages: [null, null],
             splitVertically: true,
             error: null,
             psnrResult: null
@@ -64,10 +60,10 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
         };
     }
 
-    setImg(tabId: number, img: HTMLImageElement) {
-        var newTabs = this.state.tabs.concat([]);
-        newTabs[tabId] = { img: img };
-        this.setState(lodash.merge(this.state, {tabs: newTabs}) as ImageTabsState)
+    setImg(tabId: number, img: ImageUtils.CanvasImage) {
+        var newTabs = this.state.tabImages.concat([]);
+        newTabs[tabId] = img;
+        this.setState(lodash.merge(this.state, {tabImages: newTabs}) as ImageTabsState)
     }
 
     onError(e: IError) {
@@ -83,13 +79,12 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
     }
 
     showPsnr(ev) {
-        if (!this.state.tabs[0] || !this.state.tabs[1])
+        var [img1, img2] = this.state.tabImages;
+        if (!this.state.tabImages[0] || !this.state.tabImages[1])
             return this.onError(new PsnrNeedsBothImagesError());
-        var img1 = this.state.tabs[0].img;
-        var img2 = this.state.tabs[1].img;
-        if (img1.width !== img2.width || img1.height !== img2.height)
+        if (img1.canvas.width !== img2.canvas.width || img1.canvas.height !== img2.canvas.height)
             return this.onError(new PsnrDifferentSizesError());
-        var psnr = getPsnr(img1, img2);
+        var psnr = ImageUtils.getPsnr(img1.canvas, img2.canvas);
         this.setState(lodash.merge(this.state, {
             psnrResult: psnr,
             psnrButton: ev.currentTarget as React.ReactInstance
@@ -124,12 +119,12 @@ export default class ImageTabs extends React.Component<ImageTabsProps, ImageTabs
                     </ToolbarGroup>
                 </Toolbar>
                 <Paper style={this.getPanelStyle(0)}>
-                    <ImageEditor img={this.state.tabs[0] ? this.state.tabs[0].img : null}
+                    <ImageEditor img={this.state.tabImages[0] ? this.state.tabImages[0] : null}
                                  onImgLoad={img => this.setImg(0, img)}
                                  onError={(e) => this.onError(e)}/>
                 </Paper>
                 <Paper style={this.getPanelStyle(1)}>
-                    <ImageEditor img={this.state.tabs[1] ? this.state.tabs[1].img : null}
+                    <ImageEditor img={this.state.tabImages[1] ? this.state.tabImages[1] : null}
                                  onImgLoad={img => this.setImg(1, img)}
                                  onError={(e) => this.onError(e)}/>
                 </Paper>

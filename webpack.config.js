@@ -26,7 +26,7 @@ var DEFAULT_PARAMS = {
     },
     module: {
         loaders: [
-            {test: /\.tsx?$/, loader: 'react-hot!ts-loader?jsx=true', exclude: /(\.test.ts$|node_modules)/},
+            {test: /\.tsx?$/, loader: 'react-hot!ts-loader?jsx=true'},
             {test: /\.css$/, loader: 'style!css?localIdentName=[name]__[local]___[hash:base64:5]'},
             {test: /\.tpl.html/, loader: 'html'},
             {test: /\.(ico|png|jpg|gif|svg|eot|ttf|woff|woff2)(\?.+)?$/, loader: 'url-loader?limit=100000'}

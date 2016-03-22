@@ -1,13 +1,13 @@
-export function getImage(src: string): Promise<HTMLImageElement> {
+function getImage(src: string): Promise<HTMLImageElement> {
     var image = new Image();
     return new Promise((resolve, reject) => {
-        image.src = src;
         image.onload = () => resolve(image);
         image.onerror = () => reject();
+        image.src = src;
     });
 }
 
-export function imgToCanvas(img: HTMLImageElement): HTMLCanvasElement {
+function imgToCanvas(img: HTMLImageElement): HTMLCanvasElement {
     var canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
@@ -15,8 +15,8 @@ export function imgToCanvas(img: HTMLImageElement): HTMLCanvasElement {
     return canvas;
 }
 
-function imgToData(img: HTMLImageElement): Uint8ClampedArray {
-    return imgToCanvas(img).getContext("2d").getImageData(0, 0, img.width, img.height).data;
+export function getCanvas(src: string): Promise<HTMLCanvasElement> {
+    return getImage(src).then(imgToCanvas);
 }
 
 function sqr(num: number): number {
@@ -39,10 +39,14 @@ function getMseSum(data1: Uint8ClampedArray, data2: Uint8ClampedArray): number {
     return sum;
 }
 
-export function getPsnr(img1: HTMLImageElement, img2: HTMLImageElement): number {
-    var data1 = imgToData(img1);
-    var data2 = imgToData(img2);
-    var pixelCount = img1.height * img1.width;
+function canvasImgToData(canvas: HTMLCanvasElement): Uint8ClampedArray {
+    return canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+}
+
+export function getPsnr(canvas1: HTMLCanvasElement, canvas2: HTMLCanvasElement): number {
+    var data1 = canvasImgToData(canvas1);
+    var data2 = canvasImgToData(canvas2);
+    var pixelCount = canvas1.height * canvas1.width;
     var mseSum = getMseSum(data1, data2);
     return 10 * (log10(sqr(255) * pixelCount * 3) - log10(mseSum));
 }
@@ -54,10 +58,9 @@ interface Pixel {
     a: number;
 }
 
-function mapPixels(fn: (Pixel) => Pixel, img: CanvasImage): CanvasImage {
-    let {width, height} = img.canvas;
-    let data = img.canvas.getContext("2d")
-        .getImageData(0, 0, width, height).data;
+function mapPixels(fn: (Pixel) => Pixel, canvas: HTMLCanvasElement): HTMLCanvasElement {
+    let {width, height} = canvas;
+    let data = canvasImgToData(canvas);
     let length = data.length;
     for (var i = 0; i < length; i += 4) {
         let {r, g, b, a} = fn({ r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3]});
@@ -70,7 +73,7 @@ function mapPixels(fn: (Pixel) => Pixel, img: CanvasImage): CanvasImage {
    newCanvas.width = width;
    newCanvas.height = height;
    newCanvas.getContext("2d").putImageData(new ImageData(data, width, height), 0, 0);
-   return new CanvasImage(newCanvas, img.name);
+   return newCanvas;
 }
 
 export class CanvasImage {
