@@ -51,11 +51,15 @@ export function getPsnr(canvas1: HTMLCanvasElement, canvas2: HTMLCanvasElement):
     return 10 * (log10(sqr(255) * pixelCount * 3) - log10(mseSum));
 }
 
-interface Pixel {
+export interface Pixel {
     r: number;
     g: number;
     b: number;
     a: number;
+}
+
+function byteBoundaries(b: number) : number {
+    return Math.max(Math.min(b, 255), 0);
 }
 
 function mapPixels(fn: (Pixel) => Pixel, canvas: HTMLCanvasElement): HTMLCanvasElement {
@@ -64,10 +68,10 @@ function mapPixels(fn: (Pixel) => Pixel, canvas: HTMLCanvasElement): HTMLCanvasE
     let length = data.length;
     for (var i = 0; i < length; i += 4) {
         let {r, g, b, a} = fn({ r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3]});
-        data[i] = r;
-        data[i + 1] = g;
-        data[i + 2] = b;
-        data[i + 3] = a;
+        data[i] = byteBoundaries(r);
+        data[i + 1] = byteBoundaries(g);
+        data[i + 2] = byteBoundaries(b);
+        data[i + 3] = byteBoundaries(a);
    }
    var newCanvas = document.createElement("canvas");
    newCanvas.width = width;
@@ -83,12 +87,79 @@ function toGreyscale(fn: (Pixel) => number, canvas: HTMLCanvasElement) {
     }, canvas);
 }
 
+export function getYOfPx({r, g, b}: Pixel): number {
+    return (77 * r + 150 * g + 29 * b) >> 8;
+}
+
+export function getCrOfPx({r, g, b}: Pixel): number {
+    return ((128 * r + -107 * g + -21 * b) >> 8) + 128;
+}
+
+export function getCbOfPx({r, g, b}: Pixel): number {
+    return ((-43 * r + -85 * g + 128 * b) >> 8) + 128;
+}
+
+function getCbCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    return mapPixels(px => ({ r: 0, g: 0, b: getCbOfPx(px), a: 255 }), canvas);
+}
+
+function getCrCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    return mapPixels(px => ({ r: getCrOfPx(px), g: 0, b: 0, a: 255 }), canvas);
+}
+
+export function toYCrCbCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    var y = toCcir6011Greyscale(canvas);
+    var cr = getCrCanvas(canvas);
+    var cb = getCbCanvas(canvas);
+    var result = document.createElement("canvas");
+    result.width = canvas.width;
+    result.height = canvas.height * 3;
+    var ctx = result.getContext("2d");
+    ctx.putImageData(y.getContext("2d").getImageData(0, 0, canvas.width, canvas.height), 0, 0); 
+    ctx.putImageData(cr.getContext("2d").getImageData(0, 0, canvas.width, canvas.height), 0, canvas.height); 
+    ctx.putImageData(cb.getContext("2d").getImageData(0, 0, canvas.width, canvas.height), 0, canvas.height * 2);
+    return result;
+}
+
+export function yCrCbToPx(y: number, cr: number, cb: number): Pixel {
+    return {
+        r: y + Math.floor(256 * (cr - 128) / 183),
+        g: y - Math.floor((5329 * (cb - 128) + 11103 * (cr - 128)) / 15481),
+        b: y + Math.floor(256 * (cb - 128) / 144),
+        a: 255
+    };
+}
+
+export function fromYCrCbCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+    var width = canvas.width;
+    var height = Math.round(canvas.height / 3);
+    var yData = canvas.getContext("2d").getImageData(0, 0, width, height).data;
+    var crData = canvas.getContext("2d").getImageData(0, height, width, height).data;
+    var cbData = canvas.getContext("2d").getImageData(0, height * 2, width, height).data;
+    var resArray = new Uint8ClampedArray(height * width * 4);
+    for (var i = 0; i < resArray.length; i += 4) {
+        let y = yData[i];
+        let cr = crData[i];
+        let cb = cbData[i + 2];
+        let {r, g, b, a} = yCrCbToPx(y, cr, cb);
+        resArray[i] = byteBoundaries(r);
+        resArray[i + 1] = byteBoundaries(g);
+        resArray[i + 2] = byteBoundaries(b);
+        resArray[i + 3] = byteBoundaries(a);
+   }
+   var newCanvas = document.createElement("canvas");
+   newCanvas.width = width;
+   newCanvas.height = height;
+   newCanvas.getContext("2d").putImageData(new ImageData(resArray, width, height), 0, 0);
+   return newCanvas; 
+}
+
 export function toUniformGreyscale(canvas: HTMLCanvasElement): HTMLCanvasElement {
     return toGreyscale(({r, g, b}) => (r + g + b) / 3, canvas);
 }
 
 export function toCcir6011Greyscale(canvas: HTMLCanvasElement): HTMLCanvasElement {
-    return toGreyscale(({r, g, b}) =>  0.299 * r + 0.587 * g + 0.114 * b, canvas);
+    return toGreyscale(getYOfPx, canvas);
 }
 
 export class CanvasImage {

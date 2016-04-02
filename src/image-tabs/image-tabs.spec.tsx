@@ -56,7 +56,4 @@ describe("image-tabs", () => {
         });
     });
     
-    it("should generate black-n-white version", () => {
-        
-    });
 });

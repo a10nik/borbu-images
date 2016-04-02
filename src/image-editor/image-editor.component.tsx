@@ -6,7 +6,7 @@ import { CircularProgress } from 'material-ui';
 import lodash = require("lodash");
 import {Paper, FlatButton, FontIcon, Toggle, Toolbar, ToolbarGroup} from "material-ui";
 import {FileFileDownload, ImageColorLens} from "material-ui/lib/svg-icons";
-import {IconMenu, MenuItem, IconButton} from "material-ui";
+import {IconMenu, MenuItem, IconButton, Divider} from "material-ui";
 import * as ImageUtils from "../image-utils/image-utils";
 import {IError} from "../common/errors";
 import {ToolbarSeparator} from "material-ui";
@@ -35,8 +35,8 @@ enum DownloadFormat {
     Png
 }
 
-enum Greyscale {
-    Uniform, Ccir6011
+enum Transformation {
+    UniformGreyscale, Ccir6011Greyscale, ToYCrCb, FromYCrCb
 }
 
 export default class ImageEditor extends React.Component<ImageWindowProps, ImageWindowState> {
@@ -63,18 +63,26 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
         };
     }
 
-    private toGreyscale(type: Greyscale) {
+    private getTransformFn(type: Transformation) {
+        switch (type) {
+            case Transformation.UniformGreyscale:
+                return ImageUtils.toUniformGreyscale;
+            case Transformation.Ccir6011Greyscale:
+                return ImageUtils.toCcir6011Greyscale;
+            case Transformation.ToYCrCb:
+                return ImageUtils.toYCrCbCanvas;
+            case Transformation.FromYCrCb:
+                return ImageUtils.fromYCrCbCanvas;
+            default:
+                throw new Error(`No suitable transformation for ${type}`);
+        }
+    }
+    
+    private transformImage(type: Transformation) {
         if (!this.props.img)
             return this.props.onError(new NoImageError());
-        switch (type) {
-            case Greyscale.Uniform:
-                return this.props.onImgLoad(
-                    this.props.img.withCanvas(ImageUtils.toUniformGreyscale(this.props.img.canvas)));
-            case Greyscale.Ccir6011:
-                return this.props.onImgLoad(
-                    this.props.img.withCanvas(ImageUtils.toCcir6011Greyscale(this.props.img.canvas)));
-        }
-        
+        return this.props.onImgLoad(
+                this.props.img.withCanvas(this.getTransformFn(type)(this.props.img.canvas)));
     }
     
     downloadImage(format: DownloadFormat) {
@@ -117,9 +125,12 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                             <MenuItem value={DownloadFormat.Png} primaryText="As PNG" />
                         </IconMenu>
                         <IconMenu iconButtonElement={<IconButton><ImageColorLens/></IconButton>}
-                            onChange={(ev, val) => this.toGreyscale(val)}>
-                            <MenuItem value={Greyscale.Uniform} primaryText="Uniform greyscale" />
-                            <MenuItem value={Greyscale.Ccir6011} primaryText="CCIR 601-1 greyscale" />
+                            onChange={(ev, val) => this.transformImage(val)}>
+                            <MenuItem value={Transformation.UniformGreyscale} primaryText="Uniform greyscale" />
+                            <MenuItem value={Transformation.Ccir6011Greyscale} primaryText="CCIR 601-1 greyscale" />
+                            <Divider/>
+                            <MenuItem value={Transformation.ToYCrCb} primaryText="To YCrCb" />
+                            <MenuItem value={Transformation.FromYCrCb} primaryText="From YCrCb" />
                         </IconMenu>
                     </ToolbarGroup>
                 </Toolbar>
