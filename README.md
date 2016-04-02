@@ -7,7 +7,7 @@ Here is what conversion to YC<sub>r</sub>C<sub>b</sub> looks like in accordance 
 
 ![](/readme-imgs/YCrCb-to.gif?raw=true)
 
-When we convert it back into RGB, the RGB vector looks like this:
+When we convert it back to RGB, the RGB vector looks like this:
 
 ![](/readme-imgs/YCrCb-to-and-froh.gif?raw=true)
 
@@ -18,3 +18,5 @@ If we look more closely on multiplication of the two matrices
 it will yield approximately:
 
 ![](/readme-imgs/YCrCb-times-Inverse-YCrCb-res.gif?raw=true)
+
+That means, our RGB vector will come out multiplied by roughly an identity matrix, i.e. almost unchanged.
