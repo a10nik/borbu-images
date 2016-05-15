@@ -5,7 +5,7 @@ import Dropzone = require('react-dropzone');
 import { CircularProgress } from 'material-ui';
 import lodash = require("lodash");
 import {Paper, FlatButton, FontIcon, Toggle, Toolbar, ToolbarGroup} from "material-ui";
-import {FileFileDownload, ImageColorLens} from "material-ui/lib/svg-icons";
+import {FileFileDownload, ImageColorLens, NavigationArrowDropRight} from "material-ui/lib/svg-icons";
 import {IconMenu, MenuItem, IconButton, Divider} from "material-ui";
 import * as ImageUtils from "../image-utils/image-utils";
 import {IError} from "../common/errors";
@@ -36,7 +36,9 @@ enum DownloadFormat {
 }
 
 enum Transformation {
-    UniformGreyscale, Ccir6011Greyscale, ToYCrCb, FromYCrCb
+    UniformGreyscale, Ccir6011Greyscale, ToYCrCb, FromYCrCb,
+    QuantizeY2Cr2Cb2, QuantizeY3Cr1Cb2, QuantizeY3Cr2Cb1, QuantizeR2G2B2,
+    ToLbg64Palette
 }
 
 export default class ImageEditor extends React.Component<ImageWindowProps, ImageWindowState> {
@@ -73,6 +75,16 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                 return ImageUtils.toYCrCbCanvas;
             case Transformation.FromYCrCb:
                 return ImageUtils.fromYCrCbCanvas;
+            case Transformation.QuantizeY2Cr2Cb2:
+                return (c => ImageUtils.quantizeCanvasInYCrCb(c, 2, 2, 2));
+            case Transformation.QuantizeY3Cr1Cb2:
+                return (c => ImageUtils.quantizeCanvasInYCrCb(c, 3, 1, 2));
+            case Transformation.QuantizeY3Cr2Cb1:
+                return (c => ImageUtils.quantizeCanvasInYCrCb(c, 3, 2, 1));
+            case Transformation.QuantizeR2G2B2:
+                return (c => ImageUtils.quantizeCanvasInRgb(c, 2, 2, 2));
+            case Transformation.ToLbg64Palette:
+                return (c => ImageUtils.toLbgColors(c, 64));                
             default:
                 throw new Error(`No suitable transformation for ${type}`);
         }
@@ -131,6 +143,14 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                             <Divider/>
                             <MenuItem value={Transformation.ToYCrCb} primaryText="To YCrCb" />
                             <MenuItem value={Transformation.FromYCrCb} primaryText="From YCrCb" />
+                            <Divider/>
+                            <MenuItem value={Transformation.QuantizeY2Cr2Cb2} primaryText="Quantize Y:2 Cr:2 Cb:2" />
+                            <MenuItem value={Transformation.QuantizeY3Cr1Cb2} primaryText="Quantize Y:3 Cr:1 Cb:2" />
+                            <MenuItem value={Transformation.QuantizeY3Cr2Cb1} primaryText="Quantize Y:3 Cr:2 Cb:1" />
+                            <Divider/>
+                            <MenuItem value={Transformation.QuantizeR2G2B2} primaryText="Quantize R:2 G:2 B:2" />                            
+                            <Divider/>
+                            <MenuItem value={Transformation.ToLbg64Palette} primaryText="To LBG-64 Palette" />                            
                         </IconMenu>
                     </ToolbarGroup>
                 </Toolbar>

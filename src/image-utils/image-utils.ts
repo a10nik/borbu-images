@@ -1,3 +1,5 @@
+import {GenLloyd} from "./gen-lloyd";
+
 function getImage(src: string): Promise<HTMLImageElement> {
     var image = new Image();
     return new Promise((resolve, reject) => {
@@ -107,6 +109,38 @@ function getCrCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
     return mapPixels(px => ({ r: getCrOfPx(px), g: 0, b: 0, a: 255 }), canvas);
 }
 
+function quantizeByte(byte: number, bitsToBeLeft: number) {
+    var bitsToBeErased = 8 - bitsToBeLeft;
+    var mask = 255 << bitsToBeErased;
+    return byte & mask;
+}
+
+function quantizeByteWithHalfUpwards(byte: number, bitsToBeLeft: number) {
+    var bitsToBeErased = 8 - bitsToBeLeft;
+    var smoothingHalf = 1 << (bitsToBeErased - 1);  
+    return quantizeByte(byte, bitsToBeLeft) + smoothingHalf;
+}
+
+function quantizePxInYCrCb(px: Pixel, yBits: number, crBits: number, cbBits: number) : Pixel {
+    var y = getYOfPx(px);
+    var cr = getCrOfPx(px);
+    var cb = getCbOfPx(px);
+    return yCrCbToPx(quantizeByteWithHalfUpwards(y, yBits), quantizeByteWithHalfUpwards(cr, crBits), quantizeByteWithHalfUpwards(cb, cbBits));
+}
+
+export function quantizeCanvasInYCrCb(canvas: HTMLCanvasElement, yBits: number, crBits: number, cbBits: number): HTMLCanvasElement {
+     return mapPixels(px => quantizePxInYCrCb(px, yBits, crBits, cbBits), canvas);
+}
+
+export function quantizeCanvasInRgb(canvas: HTMLCanvasElement, rBits: number, gBits: number, bBits: number): HTMLCanvasElement {
+     return mapPixels(({r, g, b, a}) => ({
+            r: quantizeByteWithHalfUpwards(r, rBits),
+            g: quantizeByteWithHalfUpwards(g, gBits),
+            b: quantizeByteWithHalfUpwards(b, bBits),
+            a: a
+        }), canvas);
+}
+
 export function toYCrCbCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
     var y = toCcir6011Greyscale(canvas);
     var cr = getCrCanvas(canvas);
@@ -181,4 +215,40 @@ export class CanvasImage {
     public withCanvas(canvas): CanvasImage {
         return new CanvasImage(canvas, this.name);
     }
+}
+
+function dist(px1: Pixel, px2: Pixel): number {
+    return (px1.r - px2.r) * (px1.r - px2.r) +
+            (px1.g - px2.g) * (px1.g - px2.g) + 
+            (px1.b - px2.b) * (px1.b - px2.b) +
+            (px1.a - px2.a) * (px1.a - px2.a);
+}
+
+function closest(pxs: Pixel[], px: Pixel): Pixel {
+    var closest = pxs[0];
+    var bestDist = dist(px, closest);
+    pxs.forEach(otherPx => {
+        var otherDist = dist(otherPx, px);
+        if (otherDist < bestDist) {
+            bestDist = otherDist;
+            closest = otherPx; 
+        }
+    });
+    return closest;
+}
+
+export function toLbgColors(canvas: HTMLCanvasElement, k: number): HTMLCanvasElement {
+    let colors : number[][] = [];
+    mapPixels(px => {
+        colors.push([px.r, px.g, px.b, px.a]);
+        return px;
+    }, canvas);
+    let alg = new GenLloyd(colors);
+    let samplePxs = alg.getClusterPoints(k).map(color => ({
+       r: color[0],
+       g: color[1],
+       b: color[2],
+       a: color[3]
+    }));
+    return mapPixels(px => closest(samplePxs, px), canvas);
 }
