@@ -1,4 +1,5 @@
 import {GenLloyd} from "./gen-lloyd";
+import {MedCut} from "./med-cut";
 
 function getImage(src: string): Promise<HTMLImageElement> {
     var image = new Image();
@@ -237,18 +238,29 @@ function closest(pxs: Pixel[], px: Pixel): Pixel {
     return closest;
 }
 
-export function toLbgColors(canvas: HTMLCanvasElement, k: number): HTMLCanvasElement {
+
+function quantizeWithPalette(quantize: (sample: number[][]) => number[][], canvas: HTMLCanvasElement) : HTMLCanvasElement {
     let colors : number[][] = [];
     mapPixels(px => {
         colors.push([px.r, px.g, px.b, px.a]);
         return px;
     }, canvas);
-    let alg = new GenLloyd(colors);
-    let samplePxs = alg.getClusterPoints(k).map(color => ({
+    let alg = new GenLloyd();
+    let samplePxs = quantize(colors).map(color => ({
        r: color[0],
        g: color[1],
        b: color[2],
        a: color[3]
     }));
     return mapPixels(px => closest(samplePxs, px), canvas);
+}
+
+export function toLbgColors(canvas: HTMLCanvasElement, k: number): HTMLCanvasElement {
+    let alg = new GenLloyd();
+    return quantizeWithPalette(sample => alg.quantize(sample, k), canvas);
+}
+
+export function quantizeWithMedCut(canvas: HTMLCanvasElement, k: number): HTMLCanvasElement {
+    let alg = new MedCut();
+    return quantizeWithPalette(sample => alg.quantize(sample, k), canvas);
 }

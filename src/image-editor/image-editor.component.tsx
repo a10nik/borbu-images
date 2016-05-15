@@ -37,8 +37,8 @@ enum DownloadFormat {
 
 enum Transformation {
     UniformGreyscale, Ccir6011Greyscale, ToYCrCb, FromYCrCb,
-    QuantizeY2Cr2Cb2, QuantizeY3Cr1Cb2, QuantizeY3Cr2Cb1, QuantizeR2G2B2,
-    ToLbg64Palette
+    QuantizeY2Cr2Cb2, QuantizeY3Cr1Cb2, QuantizeY3Cr2Cb1, QuantizeR2G2B2, 
+    ToLbg64Palette, ToMedianCutPalette
 }
 
 export default class ImageEditor extends React.Component<ImageWindowProps, ImageWindowState> {
@@ -84,7 +84,9 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
             case Transformation.QuantizeR2G2B2:
                 return (c => ImageUtils.quantizeCanvasInRgb(c, 2, 2, 2));
             case Transformation.ToLbg64Palette:
-                return (c => ImageUtils.toLbgColors(c, 64));                
+                return (c => ImageUtils.toLbgColors(c, 64));
+            case Transformation.ToMedianCutPalette:
+                return (c => ImageUtils.quantizeWithMedCut(c, 6));                
             default:
                 throw new Error(`No suitable transformation for ${type}`);
         }
@@ -150,7 +152,8 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                             <Divider/>
                             <MenuItem value={Transformation.QuantizeR2G2B2} primaryText="Quantize R:2 G:2 B:2" />                            
                             <Divider/>
-                            <MenuItem value={Transformation.ToLbg64Palette} primaryText="To LBG-64 Palette" />                            
+                            <MenuItem value={Transformation.ToLbg64Palette} primaryText="To LBG-64 Palette" />  
+                            <MenuItem value={Transformation.ToMedianCutPalette} primaryText="To Median Cut Palette" />  
                         </IconMenu>
                     </ToolbarGroup>
                 </Toolbar>

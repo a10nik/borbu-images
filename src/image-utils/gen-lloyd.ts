@@ -21,16 +21,6 @@ export class GenLloyd {
     
     protected epsilon = 0.05;
     protected avgDistortion = 0.0;
-  
-    /**
-     * Create Generalized Lloyd object with an array of sample points
-     * @param samplePoints 2-dim. array[N][K] of N sample points where each
-     * point has the same dimension K. You can also pass 'null' and then set
-     * the sample points later using setSamplePoints()
-     */
-    public constructor(samplePoints: number[][]) {
-        this.setSamplePoints(samplePoints);
-    }
 
     private setSamplePoints(samplePoints: number[][]) {
         if (samplePoints.length > 0) {
@@ -39,7 +29,8 @@ export class GenLloyd {
         }
     }
 
-    public getClusterPoints(k: number) {
+    public quantize(samplePoints: number[][], k: number) {
+        this.setSamplePoints(samplePoints);
         this.calcClusters(k);
         return this.clusterPoints;
     }
