@@ -30,7 +30,7 @@ export class MedCut {
     public quantize(points: number[][], depth: number): number[][] {
         var longestDimension = this.getLongestDim(this.getBoundaries(points));
         points.sort((a, b) => cmp(a[longestDimension], b[longestDimension]));
-        if (depth == 0) {
+        if (depth == 0 || points.length === 1) {
             return [points[Math.floor(points.length / 2)]];
         } else {
             let firstHalf = points.slice(0, Math.floor(points.length / 2));
