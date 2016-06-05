@@ -42,7 +42,7 @@ function getMseSum(data1: Uint8ClampedArray, data2: Uint8ClampedArray): number {
     return sum;
 }
 
-function canvasImgToData(canvas: HTMLCanvasElement): Uint8ClampedArray {
+export function canvasImgToData(canvas: HTMLCanvasElement): Uint8ClampedArray {
     return canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
 }
 
@@ -90,16 +90,28 @@ function toGreyscale(fn: (Pixel) => number, canvas: HTMLCanvasElement) {
     }, canvas);
 }
 
-export function getYOfPx({r, g, b}: Pixel): number {
+export function getYOfRgb(r: number, g: number, b: number): number {
     return (77 * r + 150 * g + 29 * b) >> 8;
 }
 
-export function getCrOfPx({r, g, b}: Pixel): number {
+export function getCrOfRgb(r: number, g: number, b: number): number {
     return ((128 * r + -107 * g + -21 * b) >> 8) + 128;
 }
 
-export function getCbOfPx({r, g, b}: Pixel): number {
+export function getCbOfRgb(r: number, g: number, b: number): number {
     return ((-43 * r + -85 * g + 128 * b) >> 8) + 128;
+}
+
+export function getYOfPx({r, g, b}: Pixel): number {
+    return getYOfRgb(r, g, b);
+}
+
+export function getCrOfPx({r, g, b}: Pixel): number {
+    return getCrOfRgb(r, g, b);
+}
+
+export function getCbOfPx({r, g, b}: Pixel): number {
+    return getCbOfRgb(r, g, b);
 }
 
 function getCbCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {

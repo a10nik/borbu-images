@@ -4,14 +4,14 @@ import {Image as CanvasImage, Surface as CanvasSurface, Text as CanvasText} from
 import Dropzone = require('react-dropzone');
 import { CircularProgress } from 'material-ui';
 import lodash = require("lodash");
-import {Paper, FlatButton, FontIcon, Toggle, Toolbar, ToolbarGroup} from "material-ui";
+import {Paper, FlatButton, RaisedButton, RadioButton, RadioButtonGroup, FontIcon, Toggle, Toolbar, ToolbarGroup} from "material-ui";
 import {FileFileDownload, ImageColorLens, NavigationArrowDropRight} from "material-ui/lib/svg-icons";
-import {IconMenu, MenuItem, IconButton, Divider} from "material-ui";
+import {IconMenu, MenuItem, IconButton, Divider, Dialog} from "material-ui";
 import * as ImageUtils from "../image-utils/image-utils";
 import {IError} from "../common/errors";
 import {ToolbarSeparator} from "material-ui";
+import * as Jpeg from "../image-utils/jpeg";
 var classes = require("./image-editor.component.css");
-
 
 class ImageLoadError implements IError {
     getText():string { return "Cannot load image"; }
@@ -28,7 +28,34 @@ interface ImageWindowProps {
 }
 
 interface ImageWindowState {
-    promise?: Promise<void>
+    promise?: Promise<void>,
+    isJpegDialogOpen: boolean,
+    jpegPreview?: ImageUtils.CanvasImage,
+    jpegSettings: JpegSettings
+}
+
+interface JpegSettings {
+    quantization: TableBasedQuantization | MaximumBasedQuantization,
+    yDecimation: Jpeg.DecimationType
+    cDecimation: Jpeg.DecimationType
+}
+
+class TableBasedQuantization {
+    constructor(yTable: number[][], cTable: number[][]) {
+        this.yTable = yTable;
+        this.cTable = cTable;
+    }
+    
+    yTable: number[][]
+    cTable: number[][]
+}
+
+class MaximumBasedQuantization {
+    constructor(count: number) {
+        this.count = count;
+    }
+    
+    count: number
 }
 
 enum DownloadFormat {
@@ -38,10 +65,24 @@ enum DownloadFormat {
 enum Transformation {
     UniformGreyscale, Ccir6011Greyscale, ToYCrCb, FromYCrCb,
     QuantizeY2Cr2Cb2, QuantizeY3Cr1Cb2, QuantizeY3Cr2Cb1, QuantizeR2G2B2, 
-    ToLbg64Palette, ToMedianCutPalette
+    ToLbg64Palette, ToMedianCutPalette, Jpeg
 }
 
 export default class ImageEditor extends React.Component<ImageWindowProps, ImageWindowState> {
+
+    constructor(props?) {
+        super(props);
+        this.state = {
+            promise: null,
+            isJpegDialogOpen: false,
+            jpegPreview: null,
+            jpegSettings: {
+                quantization: new TableBasedQuantization(Jpeg.standardYQuantizationMatrix, Jpeg.standardCQuantizationMatrix),
+                yDecimation: Jpeg.DecimationType.None,
+                cDecimation: Jpeg.DecimationType.None
+            }
+        };
+    }
 
     private getImg(file:File): Promise<ImageUtils.CanvasImage> {
         return ImageUtils.getCanvas(URL.createObjectURL(file))
@@ -49,10 +90,11 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
     }
 
     private onDrop(files:File[]) {
-        let promise = this.getImg(files[0])
+        this.state.promise = this.getImg(files[0])
             .then(img => this.props.onImgLoad(img))
             .catch(() => this.props.onError(new ImageLoadError()));
-        this.setState({ promise: promise });
+            
+        this.setState(this.state);
     }
 
     private getImgStyle() {
@@ -88,17 +130,38 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
             case Transformation.ToMedianCutPalette:
                 return (c => ImageUtils.quantizeWithMedCut(c, 6));                
             default:
-                throw new Error(`No suitable transformation for ${type}`);
+                throw `No such transformation ${type}`;
         }
     }
     
-    private transformImage(type: Transformation) {
-        if (!this.props.img)
-            return this.props.onError(new NoImageError());
-        return this.props.onImgLoad(
-                this.props.img.withCanvas(this.getTransformFn(type)(this.props.img.canvas)));
+    private getJpegPreview(): ImageUtils.CanvasImage {
+        let yDecimation = Jpeg.getDecimationFn(this.state.jpegSettings.yDecimation);
+        let cDecimation = Jpeg.getDecimationFn(this.state.jpegSettings.cDecimation);
+        let yQuantization = null;
+        let cQuantization = null;
+        if (this.state.jpegSettings.quantization instanceof TableBasedQuantization) {
+            let {yTable, cTable} = this.state.jpegSettings.quantization as TableBasedQuantization;
+            yQuantization = sq => Jpeg.quantizeWithTable(sq, yTable);
+            cQuantization = sq => Jpeg.quantizeWithTable(sq, cTable);
+        }
+        return this.props.img.withCanvas(
+            Jpeg.toJpeg(this.props.img.canvas, yDecimation, cDecimation, yQuantization, cQuantization) 
+        );
     }
     
+    private transformImage(type: Transformation) {
+        if (!this.props.img) {
+            this.props.onError(new NoImageError());
+        } else if (type === Transformation.Jpeg) {
+            this.state.isJpegDialogOpen = true;
+            this.state.jpegPreview = this.getJpegPreview();
+            this.setState(this.state);
+        } else {
+            this.props.onImgLoad(
+                this.props.img.withCanvas(this.getTransformFn(type)(this.props.img.canvas)));
+        }
+    }
+        
     downloadImage(format: DownloadFormat) {
         if (!this.props.img)
             this.props.onError(new NoImageError());
@@ -122,6 +185,20 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
         document.body.appendChild(a);
         a.click();
     };
+
+    private applyJpeg() {
+        this.setState(prev => {
+            prev.isJpegDialogOpen = false;
+            return prev;
+        });        
+    }
+    
+    private closeJpegDialog() {
+        this.setState(prev => {
+            prev.isJpegDialogOpen = false;
+            return prev;
+        });
+    }
 
     render() {
 
@@ -154,10 +231,33 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                             <Divider/>
                             <MenuItem value={Transformation.ToLbg64Palette} primaryText="To LBG-64 Palette" />  
                             <MenuItem value={Transformation.ToMedianCutPalette} primaryText="To Median Cut Palette" />  
+                            <Divider/>
+                            <MenuItem value={Transformation.Jpeg} primaryText="JPEG" />  
                         </IconMenu>
                     </ToolbarGroup>
                 </Toolbar>
-
+                <Dialog open={this.state.isJpegDialogOpen} actions={[
+                    <FlatButton
+                        label="Cancel"
+                        primary={false}
+                        onTouchTap={() => this.closeJpegDialog()}
+                    />,
+                    <FlatButton
+                        label="Apply"
+                        primary={true}
+                        keyboardFocused={true}
+                        onTouchTap={() => this.applyJpeg()}
+                    />
+                ]}>
+                    <div className={classes.scrollable}>
+                        {this.state.jpegPreview ? 
+                            <CanvasSurface width={this.state.jpegPreview.canvas.width}
+                                        height={this.state.jpegPreview.canvas.height} top={0} left={0}>
+                                <CanvasImage src={this.state.jpegPreview.getSrc()} style={this.getImgStyle()}/>
+                            </CanvasSurface>:
+                        null}
+                    </div>
+                </Dialog>
                 <div className={classes.scrollable}>
                     <Dropzone style={{}} onDropAccepted={this.onDrop.bind(this)} accept="image/*">
                         {this.props.img ?
