@@ -225,7 +225,7 @@ export class CanvasImage {
         return this.src;
     }
     
-    public withCanvas(canvas): CanvasImage {
+    public withCanvas(canvas: HTMLCanvasElement): CanvasImage {
         return new CanvasImage(canvas, this.name);
     }
 }

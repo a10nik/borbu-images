@@ -1,5 +1,5 @@
 import * as ImageUtils from "./image-utils";
-
+let LZString = require("lz-string/libs/lz-string");
 type Square = number[][]
  
 function toYCrCbSquares(canvas: HTMLCanvasElement, size: number): {y: Square[][], cr: Square[][], cb: Square[][]} {
@@ -90,6 +90,10 @@ function multiply(a: Square, b: Square): Square {
     return m;
 }
 
+function scalarMultiply(s: Square, c: number): Square {
+    return s.map(ln => ln.map(x => x * c));
+}
+
 function dct(square: Square): Square {
     return multiply(multiply(cosines, square), cosinesTrans);
 }
@@ -135,6 +139,21 @@ export function quantizeWithTable(square: Square, quantizationTable: Square): Sq
     return square.map((ln, i) => ln.map((x, j) => Math.round(x / quantizationTable[i][j]) * quantizationTable[i][j]))
 }
 
+export function quantizeByMaxima(square: Square, count: number): Square {
+    let all = [].concat.apply([], square.map(ln => ln.map(Math.abs)));
+    all.sort((a, b) => a - b);
+    let borderline = all[all.length - count];
+    let replaced = 0;
+    return square.map((ln, i) => ln.map((x, j) => {
+        if ((Math.abs(x) >= borderline || (i === 0 && j === 0)) && replaced < count) {
+            replaced++;
+            return x;
+        } else {
+            return 0;
+        }
+    }));
+}
+
 function chunks<T>(arr: T[], chunkSize: number): T[][] {
     var res = [];
     for (var i = 0; i < arr.length; i += chunkSize)
@@ -144,13 +163,22 @@ function chunks<T>(arr: T[], chunkSize: number): T[][] {
 
 function withDeltaEncodedDcs(zigZags: number[][]): number[][] {
     return zigZags
-        .map((z, i) => i == 0 ? z[0] : zigZags[i - 1][0] - z[0])
+        .map((z, i) => i == 0 ? z[0] : z[0] - zigZags[i - 1][0])
         .map((z0, i) => [z0].concat(zigZags[i].slice(1)));
 }
 
 function withDeltaDecodedDcs(zigZags: number[][]): number[][] {
+    let last = null;
     return zigZags
-        .map((z, i) => i == 0 ? z[0] : zigZags[i - 1][0] + z[0])
+        .map((z, i) => {
+            if (i == 0) {
+                last = z[0];
+                return last;
+            } else {
+                 last += z[0];
+                 return last;
+            }
+        })
         .map((z0, i) => [z0].concat(zigZags[i].slice(1)));
 }
 
@@ -182,30 +210,55 @@ function yCrCbSquaresToCanvas(ySquares: Square[][], crSquares: Square[][], cbSqu
     return canvas;
 }
 
+interface Compressed {
+    yData: Uint8Array,
+    crData: Uint8Array,
+    cbData: Uint8Array,
+    width: number,
+    height: number
+}
+
 export function toJpeg(canvas: HTMLCanvasElement,
                     yDecimation: ((old: number[][]) => number[][]), cDecimation: ((old: number[][]) => number[][]),
-                    yQuantization: (Square) => Square, cQuantization: (Square) => Square) {
-    let encodeChannel = (ch: Square[][], decimationFn: ((old: number[][]) => number[][]), quantizationFn: (Square) => Square) =>
-        [].concat.apply([],
-            zigZag(ch.map(ln => ln.map(sq => zigZag(quantizationFn(dct(decimate2x2(sq, decimationFn)))))))
+                    yQuantization: (Square) => Square, cQuantization: (Square) => Square) : Compressed {
+    let encodeChannel = (ch: Square[][], decimationFn: ((old: number[][]) => number[][]), quantizationFn: (Square) => Square) : Uint8Array => {
+        let data = [].concat.apply([],
+            withDeltaEncodedDcs(zigZag(ch.map(ln => ln.map(sq => zigZag(quantizationFn(dct(decimate2x2(sq, decimationFn))))))))
         ) as number[];
-    
-    let decodeChannel = (encoded: number[], width: number, height: number) =>
-        unZigZag(chunks(encoded, 64).map(z => backDct(unZigZag(z, 8, 8))), Math.ceil(width / 8), Math.ceil(height / 8));
-    
+        return LZString.compressToUint8Array({length: data.length, charAt: (i) => String.fromCharCode(255 * 64 + data[i])});
+    }
+        
     let {width, height} = canvas;                    
     let {y, cr, cb} = toYCrCbSquares(canvas, 8);
     let encodedY = encodeChannel(y, yDecimation, yQuantization);
     let encodedCr = encodeChannel(cr, cDecimation, cQuantization);
     let encodedCb = encodeChannel(cb, cDecimation, cQuantization);
-    
-    let decodedY = decodeChannel(encodedY, width, height);
-    let decodedCr = decodeChannel(encodedCr, width, height);
-    let decodedCb = decodeChannel(encodedCb, width, height);
-    return yCrCbSquaresToCanvas(decodedY, decodedCr, decodedCb, 8, width, height);
+    return {
+        yData: encodedY,
+        crData: encodedCr,
+        cbData: encodedCb,
+        width,
+        height
+    };
 }
 
-export let standardYQuantizationMatrix = [
+export function fromJpeg(compressed: Compressed) {
+    
+    let decodeChannel = (encoded: Uint8Array, width: number, height: number) => {
+        let decompressed: string = LZString.decompressFromUint8Array(encoded);
+        let channelData = range(0, decompressed.length).map(i => decompressed.charCodeAt(i) - 255 * 64);
+        return unZigZag(withDeltaDecodedDcs(chunks(channelData, 64)).map(z => backDct(unZigZag(z, 8, 8))), Math.ceil(width / 8), Math.ceil(height / 8));
+    }
+    
+    let {width, height} = compressed;
+    let decodedY = decodeChannel(compressed.yData, width, height);
+    let decodedCr = decodeChannel(compressed.crData, width, height);
+    let decodedCb = decodeChannel(compressed.cbData, width, height);
+    return yCrCbSquaresToCanvas(decodedY, decodedCr, decodedCb, 8, width, height);    
+}
+
+
+let standardYQuantizationMatrix = [
     [16, 11, 10, 16, 24, 40, 51, 61],
     [12, 12, 14, 19, 26, 58, 60, 55],
     [14, 13, 16, 24, 40, 57, 69, 56],
@@ -216,7 +269,7 @@ export let standardYQuantizationMatrix = [
     [72, 92, 95, 98, 112, 100, 103, 99]
 ];
 
-export let standardCQuantizationMatrix = [
+let standardCQuantizationMatrix = [
     [17, 18, 24, 47, 99, 99, 99, 99],
     [18, 21, 26, 66, 99, 99, 99, 99],
     [24, 26, 56, 99, 99, 99, 99, 99],
@@ -226,3 +279,19 @@ export let standardCQuantizationMatrix = [
     [99, 99, 99, 99, 99, 99, 99, 99],
     [99, 99, 99, 99, 99, 99, 99, 99]
 ];
+
+export function getStandardYQuantizationMatrixMultiplied(c: number) {
+    return scalarMultiply(standardYQuantizationMatrix, c);
+}
+
+export function getStandardCQuantizationMatrixMultiplied(c: number) {
+    return scalarMultiply(standardCQuantizationMatrix, c);
+}
+
+export function quantizationTable(a: number, g: number): number[][] {
+    return range(0, 8).map(
+        i => range(0, 8).map(
+            j => a * (1 + g * (i + j + 2)) 
+        )
+    );
+}

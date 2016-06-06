@@ -6,7 +6,7 @@ import AuthComponent from './auth/ui/auth.component.tsx';
 import LoadingComponent from './common/loading/loading.component.tsx';
 import {Toggle} from "material-ui";
 import {Toolbar} from "material-ui";
-import {ToolbarGroup, DropDownMenu, MenuItem, ToolbarTitle, FlatButton} from "material-ui";
+import {ToolbarGroup, DropDownMenu, MenuItem, ToolbarTitle, FlatButton, TextField} from "material-ui";
 import ImageTabs from "./image-tabs/image-tabs.component";
 
 export default class MainComponent extends React.Component<{ children: any }, { splitVertically: boolean }> {

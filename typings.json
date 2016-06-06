@@ -13,6 +13,7 @@
     "es6-promise": "github:DefinitelyTyped/DefinitelyTyped/es6-promise/es6-promise.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
     "history": "github:DefinitelyTyped/DefinitelyTyped/react-router/history.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
     "lodash": "github:DefinitelyTyped/DefinitelyTyped/lodash/lodash.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
+    "lz-string": "registry:dt/lz-string#0.0.0+20160317120654",
     "material-ui": "github:DefinitelyTyped/DefinitelyTyped/material-ui/material-ui.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
     "mocha": "github:DefinitelyTyped/DefinitelyTyped/mocha/mocha.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",
     "node": "github:DefinitelyTyped/DefinitelyTyped/node/node.d.ts#ca92a5b250433c38230b5f4138b36453862342bf",

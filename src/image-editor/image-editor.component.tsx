@@ -4,7 +4,7 @@ import {Image as CanvasImage, Surface as CanvasSurface, Text as CanvasText} from
 import Dropzone = require('react-dropzone');
 import { CircularProgress } from 'material-ui';
 import lodash = require("lodash");
-import {Paper, FlatButton, RaisedButton, RadioButton, RadioButtonGroup, FontIcon, Toggle, Toolbar, ToolbarGroup} from "material-ui";
+import {Paper, FlatButton, RaisedButton, RadioButton, RadioButtonGroup, FontIcon, Toggle, Toolbar, ToolbarGroup, TextField} from "material-ui";
 import {FileFileDownload, ImageColorLens, NavigationArrowDropRight} from "material-ui/lib/svg-icons";
 import {IconMenu, MenuItem, IconButton, Divider, Dialog} from "material-ui";
 import * as ImageUtils from "../image-utils/image-utils";
@@ -31,31 +31,24 @@ interface ImageWindowState {
     promise?: Promise<void>,
     isJpegDialogOpen: boolean,
     jpegPreview?: ImageUtils.CanvasImage,
-    jpegSettings: JpegSettings
+    jpegSettings: JpegSettings,
+    jpegCompressedSize: number,
+    jpegPsnr: number
 }
 
 interface JpegSettings {
-    quantization: TableBasedQuantization | MaximumBasedQuantization,
+    yQuantization: Quantization,
+    cQuantization: Quantization,
     yDecimation: Jpeg.DecimationType
     cDecimation: Jpeg.DecimationType
 }
 
-class TableBasedQuantization {
-    constructor(yTable: number[][], cTable: number[][]) {
-        this.yTable = yTable;
-        this.cTable = cTable;
-    }
-    
-    yTable: number[][]
-    cTable: number[][]
-}
-
-class MaximumBasedQuantization {
-    constructor(count: number) {
-        this.count = count;
-    }
-    
-    count: number
+interface Quantization {
+    type: "standardTableBased" | "alphaNGammaTableBased" | "maximaBased",
+    alpha: number,
+    gamma: number,
+    maximaCount: number,
+    standardMultiplier: number
 }
 
 enum DownloadFormat {
@@ -77,10 +70,25 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
             isJpegDialogOpen: false,
             jpegPreview: null,
             jpegSettings: {
-                quantization: new TableBasedQuantization(Jpeg.standardYQuantizationMatrix, Jpeg.standardCQuantizationMatrix),
+                yQuantization: {
+                    type: "standardTableBased",
+                    alpha: 3,
+                    gamma: 2,
+                    maximaCount: 6,
+                    standardMultiplier: 1
+                },
+                cQuantization: {
+                    type: "standardTableBased",
+                    alpha: 3,
+                    gamma: 2,
+                    maximaCount: 6,
+                    standardMultiplier: 1                    
+                },
                 yDecimation: Jpeg.DecimationType.None,
                 cDecimation: Jpeg.DecimationType.None
-            }
+            },
+            jpegCompressedSize: -1,
+            jpegPsnr: -1
         };
     }
 
@@ -134,28 +142,50 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
         }
     }
     
-    private getJpegPreview(): ImageUtils.CanvasImage {
-        let yDecimation = Jpeg.getDecimationFn(this.state.jpegSettings.yDecimation);
-        let cDecimation = Jpeg.getDecimationFn(this.state.jpegSettings.cDecimation);
-        let yQuantization = null;
-        let cQuantization = null;
-        if (this.state.jpegSettings.quantization instanceof TableBasedQuantization) {
-            let {yTable, cTable} = this.state.jpegSettings.quantization as TableBasedQuantization;
-            yQuantization = sq => Jpeg.quantizeWithTable(sq, yTable);
-            cQuantization = sq => Jpeg.quantizeWithTable(sq, cTable);
-        }
-        return this.props.img.withCanvas(
-            Jpeg.toJpeg(this.props.img.canvas, yDecimation, cDecimation, yQuantization, cQuantization) 
-        );
+    private onJpegYDecimationChosen(type) {
+        this.state.jpegSettings.yDecimation = 1 * type;
+        this.onJpegChanged();
     }
     
+    private onJpegCDecimationChosen(type) {
+        this.state.jpegSettings.cDecimation = 1 * type;
+        this.onJpegChanged();
+    }
+    
+    private getQuantizationFn(q: Quantization, standardTable: number[][]) {
+        switch (q.type) {
+            case "standardTableBased":
+                return sq => Jpeg.quantizeWithTable(sq, standardTable);
+            case "alphaNGammaTableBased":
+                return sq => Jpeg.quantizeWithTable(sq, Jpeg.quantizationTable(q.alpha, q.gamma));
+            case "maximaBased":
+                return sq => Jpeg.quantizeByMaxima(sq, q.maximaCount);
+            default:
+                throw "Unknown quantization type"
+        }
+    }
+    
+    private onJpegChanged() {
+        let yDecimation = Jpeg.getDecimationFn(this.state.jpegSettings.yDecimation);
+        let cDecimation = Jpeg.getDecimationFn(this.state.jpegSettings.cDecimation);
+        let yQuantization = this.getQuantizationFn(this.state.jpegSettings.yQuantization,
+            Jpeg.getStandardYQuantizationMatrixMultiplied(this.state.jpegSettings.yQuantization.standardMultiplier));
+        let cQuantization = this.getQuantizationFn(this.state.jpegSettings.cQuantization,
+            Jpeg.getStandardCQuantizationMatrixMultiplied(this.state.jpegSettings.cQuantization.standardMultiplier));
+        let compressed = Jpeg.toJpeg(this.props.img.canvas, yDecimation, cDecimation, yQuantization, cQuantization);
+        let decomressed = Jpeg.fromJpeg(compressed);  
+        this.state.jpegPreview = this.props.img.withCanvas(decomressed);
+        this.state.jpegCompressedSize = compressed.yData.length + compressed.cbData.length + compressed.crData.length;
+        this.state.jpegPsnr = ImageUtils.getPsnr(this.state.jpegPreview.canvas, this.props.img.canvas); 
+        this.setState(this.state);
+    }
+        
     private transformImage(type: Transformation) {
         if (!this.props.img) {
             this.props.onError(new NoImageError());
         } else if (type === Transformation.Jpeg) {
             this.state.isJpegDialogOpen = true;
-            this.state.jpegPreview = this.getJpegPreview();
-            this.setState(this.state);
+            this.onJpegChanged();
         } else {
             this.props.onImgLoad(
                 this.props.img.withCanvas(this.getTransformFn(type)(this.props.img.canvas)));
@@ -190,7 +220,8 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
         this.setState(prev => {
             prev.isJpegDialogOpen = false;
             return prev;
-        });        
+        });
+        this.props.onImgLoad(this.state.jpegPreview);
     }
     
     private closeJpegDialog() {
@@ -236,7 +267,10 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                         </IconMenu>
                     </ToolbarGroup>
                 </Toolbar>
-                <Dialog open={this.state.isJpegDialogOpen} actions={[
+                <Dialog open={this.state.isJpegDialogOpen} contentStyle={{
+                                                                            width: '80%',
+                                                                            maxWidth: 'none',
+                                                                            }} autoScrollBodyContent={true} actions={[
                     <FlatButton
                         label="Cancel"
                         primary={false}
@@ -249,13 +283,104 @@ export default class ImageEditor extends React.Component<ImageWindowProps, Image
                         onTouchTap={() => this.applyJpeg()}
                     />
                 ]}>
-                    <div className={classes.scrollable}>
-                        {this.state.jpegPreview ? 
-                            <CanvasSurface width={this.state.jpegPreview.canvas.width}
-                                        height={this.state.jpegPreview.canvas.height} top={0} left={0}>
-                                <CanvasImage src={this.state.jpegPreview.getSrc()} style={this.getImgStyle()}/>
-                            </CanvasSurface>:
-                        null}
+                    <div style={{display: "inline-block", verticalAlign: "top", width: "20%", marginRight: "5%"}}>
+                        <div>PSNR: <b>{this.state.jpegPsnr.toFixed(3)}</b> dB</div>
+                        <div>Size: <b>{this.state.jpegCompressedSize}</b> bytes</div>
+                        {[
+                            {dec: "yDecimation", cb: (e, val) => this.onJpegYDecimationChosen(val), title: "Y Channel Decimation"},
+                            {dec: "cDecimation", cb: (e, val) => this.onJpegCDecimationChosen(val), title: "Cb-Cr Channel Decimation"}
+                        ].map(({dec, cb, title}) =>
+                            <div key={dec}>
+                                <hr/>
+                                {title}
+                                <RadioButtonGroup name={dec} onChange={cb} valueSelected={this.state.jpegSettings[dec].toString()}>
+                                    <RadioButton
+                                        value={Jpeg.DecimationType.Leave2Left.toString()}
+                                        label="Leave 2 left"
+                                    />
+                                    <RadioButton
+                                        value={Jpeg.DecimationType.Leave2Top.toString()}
+                                        label="Leave 2 top"
+                                    />
+                                    <RadioButton
+                                        value={Jpeg.DecimationType.Leave1TopLeft.toString()}
+                                        label="Leave 1 top-left"
+                                    />
+                                    <RadioButton
+                                        value={Jpeg.DecimationType.None.toString()}
+                                        label="Do not decimate"
+                                    />
+                                </RadioButtonGroup>
+                            </div>
+                        )}
+                    </div>
+                    <div style={{display: "inline-block", verticalAlign: "top", width: "20%", marginRight: "5%"}}>
+                        {[
+                            {quan: "yQuantization", title: "Y Channel Quantization"},
+                            {quan: "cQuantization", title: "Cb-Cr Channel Quantization"}
+                        ].map(({quan, title}, i) =>
+                            <div key={quan}>
+                                { i !== 0 ? <hr/> : null}
+                                {title}
+                                <RadioButtonGroup name={quan} onChange={(e, val) => {
+                                            this.state.jpegSettings[quan].type = val;
+                                            this.onJpegChanged();
+                                        }} valueSelected={this.state.jpegSettings[quan].type}>
+                                    <RadioButton
+                                        value="standardTableBased"
+                                        label="Standard tables"
+                                    />
+                                    <RadioButton
+                                        value="alphaNGammaTableBased"
+                                        label="Alpha-n-gamma tables"
+                                    ></RadioButton>
+                                    <RadioButton
+                                        value="maximaBased"
+                                        label="Leave N maxima"
+                                    ></RadioButton>
+                                </RadioButtonGroup>
+                                    {this.state.jpegSettings[quan].type === "alphaNGammaTableBased" ? 
+                                        <TextField floatingLabelText="Alpha" value={this.state.jpegSettings[quan].alpha}
+                                            style={{ width: "100px", marginRight: "20px" }}
+                                            onChange={(e: any) => {
+                                                this.state.jpegSettings[quan].alpha = parseFloat(e.target.value);
+                                                this.onJpegChanged();
+                                            }}/>
+                                        : null}
+                                    {this.state.jpegSettings[quan].type === "alphaNGammaTableBased" ?
+                                        <TextField floatingLabelText="Gamma" value={this.state.jpegSettings[quan].gamma}
+                                            style={{ width: "100px" }}
+                                            onChange={(e: any) => {
+                                                this.state.jpegSettings[quan].gamma = parseFloat(e.target.value);
+                                                this.onJpegChanged();
+                                            }}/>
+                                        : null}
+                                    {this.state.jpegSettings[quan].type === "maximaBased" ?
+                                        <TextField floatingLabelText="Maxima count" value={this.state.jpegSettings[quan].maximaCount}
+                                            onChange={(e: any) => {
+                                                this.state.jpegSettings[quan].maximaCount = parseInt(e.target.value, 10);
+                                                this.onJpegChanged();
+                                            }}/>
+                                        : null}
+                                    {this.state.jpegSettings[quan].type === "standardTableBased" ?
+                                        <TextField floatingLabelText="Table multiplier" value={this.state.jpegSettings[quan].standardMultiplier}
+                                            onChange={(e: any) => {
+                                                this.state.jpegSettings[quan].standardMultiplier = parseFloat(e.target.value);
+                                                this.onJpegChanged();
+                                            }}/>
+                                        : null}
+                            </div>
+                        )}
+                    </div>
+                    <div style={{display: "inline-block", verticalAlign: "top", width: "49%"}}>
+                        <div className={classes.scrollable}>
+                            {this.state.jpegPreview ? 
+                                <CanvasSurface width={this.state.jpegPreview.canvas.width}
+                                            height={this.state.jpegPreview.canvas.height} top={0} left={0}>
+                                    <CanvasImage src={this.state.jpegPreview.getSrc()} style={this.getImgStyle()}/>
+                                </CanvasSurface>:
+                            null}
+                        </div>
                     </div>
                 </Dialog>
                 <div className={classes.scrollable}>
