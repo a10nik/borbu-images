@@ -95,25 +95,32 @@ function scalarMultiply(s: Square, c: number): Square {
 }
 
 function dct(square: Square): Square {
-    return multiply(multiply(cosines, square), cosinesTrans);
+    return multiply(multiply(cosines, square), cosinesTrans).map(ln => ln.map(Math.round));
 }
 
 function backDct(square: Square): Square {
-    return multiply(multiply(cosinesTrans, square), cosines);
+    return multiply(multiply(cosinesTrans, square), cosines).map(ln => ln.map(Math.round));
 }
 
 function forEachZigZagIndexCorrespondence(width: number, height: number, fn: (x: number, y: number, zigZagIndex: number) => void) {
-    let m = height;
-    let n = width;
-    let j = 0;
-    for (let i = 0; i < m + n - 1; i++){
-        if (i % 2 == 1){
-            for (let y = Math.min(i, n - 1); y >= Math.max(0, i - m + 1); y--){
-                fn(y, i - y, j++);
+    let m = height - 1;
+    let n = width - 1;
+    let index = 0;
+    for (let i = 0; i <= m + n; i++) {
+        if (i % 2 == 0) {
+            for (let x = i; x >= 0; x--) {
+                // valid matrix index
+                if ((x <= m) && (i - x <= n)) {
+                    fn(i - x, x, index);
+                    index++;
+                }
             }
         } else {
-            for (let x = Math.min(i, m - 1); x >= Math.max(0, i - n + 1); x--){
-                fn(x, i - x, j++);
+            for (let x = 0; x <= i; x++) {
+                if ((x <= m) && (i - x <= n)) {
+                    fn(i - x, x, index);
+                    index++;
+                }
             }
         }
     }
