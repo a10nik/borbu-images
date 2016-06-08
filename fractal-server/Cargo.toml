@@ -1,0 +1,6 @@
+[package]
+name = "fractal-server"
+version = "0.1.0"
+authors = ["Artyom Desyatnikov <l0nikov@ya.ru>"]
+
+[dependencies]
