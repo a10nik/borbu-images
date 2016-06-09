@@ -19,13 +19,30 @@ fn rect_avg(vec: &Vec<Vec<u8>>, x: usize, y: usize, side: usize) -> u8 {
 }
 
 pub trait ByteRect where Self: Sized {
+    fn get_rect(&self, x: usize, y: usize, width: usize, height: usize) -> Self;
+    fn get_square(&self, sq: SquareCoords) -> Self {
+        self.get_rect(sq.x, sq.y, sq.side, sq.side)
+    }
     fn transform(&self, Transform) -> Self;
     fn scale_down(&self, times: usize) -> Self;
     fn linear(&self, LinearCoeffs) -> Self;
     fn best_coeffs_to_match(&self, other: &Self) -> LinearCoeffs;
     fn dist(&self, other: &Self) -> u64;
+    fn roughness(&self) -> u64 {
+        let w = self.width();
+        let h = self.height();
+        if w < 2 || h < 2 {
+            1
+        } else {
+            self.get_rect(0, 0, w - 1, h - 1).dist(
+                &self.get_rect(1, 1, w - 1, h - 1)
+            )
+        }
+    }
     fn pad_to_divisible_by(&self, divisor: usize) -> Self;
-    fn to_square_chunks(&self, size: usize) -> Vec<(SquareCoords, Self)> ;
+    fn to_square_chunks(&self, size: usize) -> Vec<(SquareCoords, Self)>;
+    fn width(&self) -> usize;
+    fn height(&self) -> usize;
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
@@ -35,14 +52,15 @@ pub struct SquareCoords {
     pub side: usize,
 }
 
-fn get_square(vec: &Vec<Vec<u8>>, sq: SquareCoords) -> Vec<Vec<u8>> {
-    vec[sq.y..sq.y + sq.side]
-        .iter()
-        .map(|ln| ln[sq.x..sq.x + sq.side].to_vec())
-        .collect()
-}
-
 impl ByteRect for Vec<Vec<u8>> {
+    fn width(&self) -> usize {
+        self[0].len()
+    }
+
+    fn height(&self) -> usize {
+        self.len()
+    }
+
     fn transform(&self, t: Transform) -> Self {
         let width = self[0].len();
         let height = self.len();
@@ -87,22 +105,26 @@ impl ByteRect for Vec<Vec<u8>> {
     }
 
     fn best_coeffs_to_match(&self, other: &Self) -> LinearCoeffs {
-        let width = self[0].len();
-        let height = self.len();
+        let width = self.width();
+        let height = self.height();
+        if other.height() != height || other.width() != width {
+            panic!("can't handle different dimensions {}x{} and {}x{}",
+                width, height, other.width(), other.height());
+        }
         let self_sum = self.iter().map(|ln|
-                ln.iter().fold(0, |a, &el| a + el as i32))
+                ln.iter().fold(0, |a, &el| a + el as i64))
             .fold(0, |x, y| x + y);
         let other_sum = other.iter().map(|ln|
-                    ln.iter().fold(0, |a, &el| a + el as i32))
+                    ln.iter().fold(0, |a, &el| a + el as i64))
                 .fold(0, |x, y| x + y);
         let self_sqr_sum = self.iter().map(|ln|
-                ln.iter().fold(0, |a, &el| a + el as i32 * el as i32))
+                ln.iter().fold(0, |a, &el| a + el as i64 * el as i64))
             .fold(0, |x, y| x + y);
-        let count = (self.len() * self[0].len()) as i32;
+        let count = (self.len() * self[0].len()) as i64;
         let prod_sum = (0..height)
             .map(|y|
                 (0..width)
-                    .map(|x| self[y][x] as i32 * other[y][x] as i32)
+                    .map(|x| self[y][x] as i64 * other[y][x] as i64)
                     .fold(0, |a, el| a + el))
             .fold(0, |a, el| a + el);
         let det = self_sqr_sum * count - self_sum * self_sum;
@@ -112,10 +134,20 @@ impl ByteRect for Vec<Vec<u8>> {
         }
     }
 
-    fn dist(&self, other: &Self) -> u64 {
-        let width = self[0].len();
-        let height = self.len();
+    fn get_rect(&self, x: usize, y: usize, width: usize, height: usize) -> Self {
+        self[y..y + height]
+            .iter()
+            .map(|ln| ln[x..x + width].to_vec())
+            .collect()
+    }
 
+    fn dist(&self, other: &Self) -> u64 {
+        let width = self.width();
+        let height = self.height();
+        if other.height() != height || other.width() != width {
+            panic!("can't handle different dimensions {}x{} and {}x{}",
+                width, height, other.width(), other.height());
+        }
         (0..height)
             .map(|y| (0..width)
                 .map(|x| self[y][x] as i32 - other[y][x] as i32)
@@ -126,7 +158,7 @@ impl ByteRect for Vec<Vec<u8>> {
 
     fn pad_to_divisible_by(&self, divisor: usize) -> Self {
         let round = |x: usize| {
-            if x % divisor == 0 { x } else { x - x % divisor + divisor }
+            (x + divisor - 1) / divisor * divisor
         };
         let orig_width = self[0].len();
         let orig_height = self.len();
@@ -152,7 +184,7 @@ impl ByteRect for Vec<Vec<u8>> {
                     y: chunk_y * size,
                     side: size,
                 })
-                .map(|coords| (coords, get_square(self, coords)))
+                .map(|coords| (coords, self.get_square(coords)))
             )
             .collect()
     }
